@@ -21,7 +21,7 @@ jobs:
           sudo apt-get install -y -q ragel scons autoconf automake libtool pkg-config autopoint gettext cmake llvm ffmpeg
           pip install ziglang pillow numpy scipy
 
-      - name: Helpers (static armv7: ffmpeg, et_roc, shairport-sync)
+      - name: "Helpers cache (static armv7: ffmpeg, et_roc, shairport-sync)"
         uses: actions/cache@v4
         id: helpers
         with:
