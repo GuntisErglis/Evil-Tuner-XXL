@@ -77,7 +77,7 @@ DISCOVER → Evil Tuner XXL → INSTALL → APPLY.
 **One line, on the device** (needs internet; save your project first, MPC restarts):
 
 ```sh
-cd /tmp && wget -qO et.zip https://github.com/sunskiefer/evil-tuner-xxl/releases/download/v0.1.0/Evil-Tuner-XXL-0.1.0-mpc-armv7.zip && unzip -qo et.zip && sh Evil-Tuner-XXL-0.1.0/install.sh
+cd /tmp && wget -qO et.zip https://github.com/sunskiefer/Evil-Tuner-XXL/releases/download/v0.1.0/Evil-Tuner-XXL-0.1.0-mpc-armv7.zip && unzip -qo et.zip && sh Evil-Tuner-XXL-0.1.0/install.sh
 ```
 
 **From a computer:** download the release zip, then

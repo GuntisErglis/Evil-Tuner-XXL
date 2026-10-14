@@ -65,7 +65,7 @@ jobs:
             --user-data user_data \
             --about "Evil Tuner XXL by ANDREALPHEUS: internet radio, phone (Roc) and AirPlay into an MPC track, through grains, filter, character, saturator, Erica-style delay, reverb, trance gate and a looper" \
             --requires "a network (Wi-Fi or a phone hotspot)" \
-            --id evil-tuner-xxl --repo sunskiefer/evil-tuner-xxl --license GPL-3.0-or-later \
+            --id evil-tuner-xxl --repo sunskiefer/Evil-Tuner-XXL --license GPL-3.0-or-later \
             -o dist
 
       - uses: actions/upload-artifact@v4
