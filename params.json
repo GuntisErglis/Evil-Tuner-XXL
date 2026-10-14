@@ -1,0 +1,1902 @@
+{
+ "params": [
+  {
+   "key": "in_lvl",
+   "name": "INPUT LEVEL",
+   "default": 0.7,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "genre",
+   "name": "GENRE",
+   "default": 0,
+   "options": [
+    "ALL",
+    "POP",
+    "ROCK",
+    "DANCE",
+    "ELECTRONIC",
+    "HOUSE",
+    "TECHNO",
+    "TRANCE",
+    "DRUM AND BASS",
+    "DUBSTEP",
+    "AMBIENT",
+    "CHILLOUT",
+    "LOUNGE",
+    "JAZZ",
+    "BLUES",
+    "SOUL",
+    "FUNK",
+    "DISCO",
+    "HIP HOP",
+    "RNB",
+    "RAP",
+    "REGGAE",
+    "DUB",
+    "SKA",
+    "LATIN",
+    "SALSA",
+    "BOSSA NOVA",
+    "SAMBA",
+    "REGGAETON",
+    "AFRO",
+    "AFROBEAT",
+    "WORLD",
+    "FOLK",
+    "COUNTRY",
+    "CLASSICAL",
+    "OPERA",
+    "SOUNDTRACK",
+    "EXPERIMENTAL",
+    "INDIE",
+    "ALTERNATIVE",
+    "PUNK",
+    "METAL",
+    "HARD ROCK",
+    "PSYCHEDELIC",
+    "OLDIES",
+    "60S",
+    "70S",
+    "80S",
+    "90S",
+    "LO-FI",
+    "DOWNTEMPO",
+    "TRIP HOP",
+    "INDUSTRIAL",
+    "NEWS",
+    "TALK",
+    "COMEDY",
+    "CHRISTIAN",
+    "GOSPEL",
+    "KPOP",
+    "JPOP",
+    "ANIME",
+    "BOLLYWOOD",
+    "ARABIC",
+    "TURKISH",
+    "GREEK",
+    "CELTIC",
+    "COMMUNITY",
+    "COLLEGE",
+    "UNDERGROUND",
+    "EASY LISTENING"
+   ]
+  },
+  {
+   "key": "country",
+   "name": "COUNTRY",
+   "default": 0,
+   "options": [
+    "ALL",
+    "UK",
+    "IRELAND",
+    "USA",
+    "CANADA",
+    "PORTUGAL",
+    "BRAZIL",
+    "SPAIN",
+    "FRANCE",
+    "GERMANY",
+    "NETHERLANDS",
+    "BELGIUM",
+    "ITALY",
+    "SWITZERLAND",
+    "AUSTRIA",
+    "DENMARK",
+    "SWEDEN",
+    "NORWAY",
+    "FINLAND",
+    "ICELAND",
+    "POLAND",
+    "CZECHIA",
+    "SLOVAKIA",
+    "HUNGARY",
+    "ROMANIA",
+    "BULGARIA",
+    "GREECE",
+    "TURKEY",
+    "SERBIA",
+    "CROATIA",
+    "SLOVENIA",
+    "UKRAINE",
+    "RUSSIA",
+    "ESTONIA",
+    "LATVIA",
+    "LITHUANIA",
+    "MEXICO",
+    "ARGENTINA",
+    "CHILE",
+    "COLOMBIA",
+    "PERU",
+    "VENEZUELA",
+    "CUBA",
+    "JAMAICA",
+    "ANGOLA",
+    "MOZAMBIQUE",
+    "CAPE VERDE",
+    "NIGERIA",
+    "GHANA",
+    "SENEGAL",
+    "SOUTH AFRICA",
+    "KENYA",
+    "MOROCCO",
+    "EGYPT",
+    "ISRAEL",
+    "LEBANON",
+    "SAUDI ARABIA",
+    "UAE",
+    "INDIA",
+    "PAKISTAN",
+    "INDONESIA",
+    "PHILIPPINES",
+    "THAILAND",
+    "VIETNAM",
+    "CHINA",
+    "TAIWAN",
+    "JAPAN",
+    "SOUTH KOREA",
+    "AUSTRALIA",
+    "NEW ZEALAND"
+   ]
+  },
+  {
+   "key": "sort",
+   "name": "SORT",
+   "default": 0,
+   "options": [
+    "POPULAR",
+    "VOTES",
+    "TRENDING",
+    "NAME",
+    "BITRATE",
+    "RANDOM"
+   ]
+  },
+  {
+   "key": "kbps",
+   "name": "MAX KBPS",
+   "default": 0,
+   "options": [
+    "ANY",
+    "64K",
+    "96K",
+    "128K",
+    "192K",
+    "320K"
+   ]
+  },
+  {
+   "key": "pos",
+   "name": "POSITION",
+   "default": 0.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "size",
+   "name": "SIZE",
+   "default": 0.55,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "pitch",
+   "name": "PITCH",
+   "default": 0.5,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "grains",
+   "name": "GRAINS",
+   "default": 0.55,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "spread",
+   "name": "SPREAD",
+   "default": 0.3,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "cloud",
+   "name": "CLOUD",
+   "default": 0.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "detune",
+   "name": "DETUNE",
+   "default": 0.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "shape",
+   "name": "SHAPE",
+   "default": 0.5,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "cutoff",
+   "name": "CUTOFF",
+   "default": 1.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "reso",
+   "name": "RESONANCE",
+   "default": 0.2,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "flt_env",
+   "name": "FILTER ENV",
+   "default": 0.5,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "osc_lvl",
+   "name": "OSC LEVEL",
+   "default": 0.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "mix",
+   "name": "GRAIN MIX",
+   "default": 0.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "volume",
+   "name": "VOLUME",
+   "default": 0.75,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "char_mode",
+   "name": "CHARACTER",
+   "default": 0,
+   "options": [
+    "OFF",
+    "CASSETTE",
+    "REEL",
+    "DAMAGED",
+    "VINYL",
+    "BOOMBOX",
+    "AM RADIO",
+    "VHS HI-FI",
+    "BUS COMP",
+    "LATHE",
+    "PHONE"
+   ]
+  },
+  {
+   "key": "char_int",
+   "name": "INTENSITY",
+   "default": 0.5,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "char_mix",
+   "name": "CHAR MIX",
+   "default": 1.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "sat_type",
+   "name": "SATURATOR",
+   "default": 0,
+   "options": [
+    "TAPE",
+    "TUBE",
+    "DIODE",
+    "FUZZ",
+    "CRUSH",
+    "DOWNSAMPLE",
+    "FLANGER",
+    "CHORUS"
+   ]
+  },
+  {
+   "key": "sat_amt",
+   "name": "SAT AMOUNT",
+   "default": 0.3,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "sat_mix",
+   "name": "SAT MIX",
+   "default": 1.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "lim_drive",
+   "name": "LIMIT DRIVE",
+   "default": 0.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "lim_ceil",
+   "name": "CEILING",
+   "default": 1.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "dly_time",
+   "name": "DELAY TIME",
+   "default": 0.5,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "dly_in",
+   "name": "DELAY IN LVL",
+   "default": 0.7,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "dly_fb",
+   "name": "FEEDBACK",
+   "default": 0.35,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "dly_wet",
+   "name": "DRY/WET",
+   "default": 0.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "verb_type",
+   "name": "REVERB",
+   "default": 0,
+   "options": [
+    "PLATE",
+    "REVERSE",
+    "ROOM"
+   ]
+  },
+  {
+   "key": "verb_size",
+   "name": "DECAY",
+   "default": 0.5,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "verb_shim",
+   "name": "SHIMMER",
+   "default": 0.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "verb_mix",
+   "name": "VERB MIX",
+   "default": 0.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "gate_rate",
+   "name": "GATE RATE",
+   "default": 4,
+   "options": [
+    "1/1",
+    "1/2",
+    "1/4",
+    "1/8",
+    "1/16",
+    "1/32"
+   ]
+  },
+  {
+   "key": "gate_depth",
+   "name": "GATE DEPTH",
+   "default": 1.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "gate_atk",
+   "name": "GATE ATTACK",
+   "default": 0.05,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "gate_rel",
+   "name": "GATE RELEASE",
+   "default": 0.25,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "gate_swing",
+   "name": "SWING",
+   "default": 0.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "gate_pat",
+   "name": "PATTERN",
+   "default": 3,
+   "options": [
+    "USER",
+    "STRAIGHT",
+    "OFFBEAT",
+    "TRANCE 1",
+    "TRANCE 2",
+    "GALLOP",
+    "SYNCOPATE",
+    "BROKEN",
+    "3-3-2",
+    "STUTTER",
+    "HALF",
+    "RANDOM"
+   ]
+  },
+  {
+   "key": "stut_len",
+   "name": "STUTTER LEN",
+   "default": 2,
+   "options": [
+    "1/4",
+    "1/8",
+    "1/16",
+    "1/32",
+    "1/64"
+   ]
+  },
+  {
+   "key": "duck_depth",
+   "name": "DUCK DEPTH",
+   "default": 0.7,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "duck_rel",
+   "name": "DUCK RELEASE",
+   "default": 0.35,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "duck_ch",
+   "name": "DUCK MIDI CH",
+   "default": 9,
+   "options": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16"
+   ]
+  },
+  {
+   "key": "loop_len",
+   "name": "LOOP LENGTH",
+   "default": 3,
+   "options": [
+    "FREE",
+    "1/4",
+    "1/2",
+    "1 BAR",
+    "2 BARS",
+    "4 BARS",
+    "8 BARS"
+   ]
+  },
+  {
+   "key": "loop_start",
+   "name": "LOOP START",
+   "default": 0.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "loop_speed",
+   "name": "LOOP SPEED",
+   "default": 0.5,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "loop_lvl",
+   "name": "LOOP LEVEL",
+   "default": 0.8,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "od_fb",
+   "name": "OVERDUB FB",
+   "default": 0.85,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "tape_mix",
+   "name": "LIVE/LOOP",
+   "default": 0.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "stretch",
+   "name": "STRETCH",
+   "default": 0,
+   "options": [
+    "PAULSTRETCH",
+    "FREEZE",
+    "STUTTER",
+    "CLOUD",
+    "HALF TAPE",
+    "REVERSE"
+   ]
+  },
+  {
+   "key": "stretch_amt",
+   "name": "STRETCH AMT",
+   "default": 0.5,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "l1_rate",
+   "name": "LFO1 RATE",
+   "default": 0.3,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "l1_depth",
+   "name": "LFO1 DEPTH",
+   "default": 0.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "l1_wave",
+   "name": "LFO1 WAVE",
+   "default": 0,
+   "options": [
+    "SINE",
+    "TRI",
+    "SAW UP",
+    "SAW DN",
+    "SQUARE",
+    "S&H",
+    "DRIFT"
+   ]
+  },
+  {
+   "key": "l1_dest",
+   "name": "LFO1 DEST",
+   "default": 1,
+   "options": [
+    "OFF",
+    "POSITION",
+    "SIZE",
+    "PITCH",
+    "GRAINS",
+    "SPREAD",
+    "CLOUD",
+    "DETUNE",
+    "SHAPE",
+    "CUTOFF",
+    "RESONANCE",
+    "GRAIN MIX",
+    "CHAR INT",
+    "SAT AMOUNT",
+    "DELAY TIME",
+    "DELAY FB",
+    "DELAY WET",
+    "VERB MIX",
+    "GATE DEPTH",
+    "LOOP SPEED",
+    "VOLUME"
+   ]
+  },
+  {
+   "key": "l2_rate",
+   "name": "LFO2 RATE",
+   "default": 0.2,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "l2_depth",
+   "name": "LFO2 DEPTH",
+   "default": 0.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "l2_wave",
+   "name": "LFO2 WAVE",
+   "default": 1,
+   "options": [
+    "SINE",
+    "TRI",
+    "SAW UP",
+    "SAW DN",
+    "SQUARE",
+    "S&H",
+    "DRIFT"
+   ]
+  },
+  {
+   "key": "l2_dest",
+   "name": "LFO2 DEST",
+   "default": 9,
+   "options": [
+    "OFF",
+    "POSITION",
+    "SIZE",
+    "PITCH",
+    "GRAINS",
+    "SPREAD",
+    "CLOUD",
+    "DETUNE",
+    "SHAPE",
+    "CUTOFF",
+    "RESONANCE",
+    "GRAIN MIX",
+    "CHAR INT",
+    "SAT AMOUNT",
+    "DELAY TIME",
+    "DELAY FB",
+    "DELAY WET",
+    "VERB MIX",
+    "GATE DEPTH",
+    "LOOP SPEED",
+    "VOLUME"
+   ]
+  },
+  {
+   "key": "l3_rate",
+   "name": "LFO3 RATE",
+   "default": 0.1,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "l3_depth",
+   "name": "LFO3 DEPTH",
+   "default": 0.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "l3_wave",
+   "name": "LFO3 WAVE",
+   "default": 5,
+   "options": [
+    "SINE",
+    "TRI",
+    "SAW UP",
+    "SAW DN",
+    "SQUARE",
+    "S&H",
+    "DRIFT"
+   ]
+  },
+  {
+   "key": "l3_dest",
+   "name": "LFO3 DEST",
+   "default": 3,
+   "options": [
+    "OFF",
+    "POSITION",
+    "SIZE",
+    "PITCH",
+    "GRAINS",
+    "SPREAD",
+    "CLOUD",
+    "DETUNE",
+    "SHAPE",
+    "CUTOFF",
+    "RESONANCE",
+    "GRAIN MIX",
+    "CHAR INT",
+    "SAT AMOUNT",
+    "DELAY TIME",
+    "DELAY FB",
+    "DELAY WET",
+    "VERB MIX",
+    "GATE DEPTH",
+    "LOOP SPEED",
+    "VOLUME"
+   ]
+  },
+  {
+   "key": "fol_amt",
+   "name": "FOLLOW AMT",
+   "default": 0.0,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "fol_spd",
+   "name": "FOLLOW SPEED",
+   "default": 0.4,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "fol_dest",
+   "name": "FOLLOW DEST",
+   "default": 9,
+   "options": [
+    "OFF",
+    "POSITION",
+    "SIZE",
+    "PITCH",
+    "GRAINS",
+    "SPREAD",
+    "CLOUD",
+    "DETUNE",
+    "SHAPE",
+    "CUTOFF",
+    "RESONANCE",
+    "GRAIN MIX",
+    "CHAR INT",
+    "SAT AMOUNT",
+    "DELAY TIME",
+    "DELAY FB",
+    "DELAY WET",
+    "VERB MIX",
+    "GATE DEPTH",
+    "LOOP SPEED",
+    "VOLUME"
+   ]
+  },
+  {
+   "key": "atk",
+   "name": "ATTACK",
+   "default": 0.05,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "dec",
+   "name": "DECAY",
+   "default": 0.4,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "sus",
+   "name": "SUSTAIN",
+   "default": 0.8,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "rel",
+   "name": "RELEASE",
+   "default": 0.35,
+   "min": 0,
+   "max": 1,
+   "dynamic_display": true
+  },
+  {
+   "key": "src_radio",
+   "name": "RADIO",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "src_phone",
+   "name": "PHONE",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "src_air",
+   "name": "AIRPLAY",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "search",
+   "name": "SEARCH",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "favs",
+   "name": "FAVS",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "top",
+   "name": "BROWSE",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "fav",
+   "name": "FAV",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "prev",
+   "name": "PREV",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "play",
+   "name": "PLAY",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "stop",
+   "name": "STOP",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "next",
+   "name": "NEXT",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "sync",
+   "name": "SYNC",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "pg_prev",
+   "name": "< PAGE",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "pg_next",
+   "name": "PAGE >",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "freeze",
+   "name": "FREEZE",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "keys",
+   "name": "KEYS",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "ft_lp",
+   "name": "LP",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "ft_hp",
+   "name": "HP",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "ft_bp",
+   "name": "BP",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "ft_comb",
+   "name": "COMB",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "ft_dual",
+   "name": "DUAL",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "osc",
+   "name": "OSC",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "random",
+   "name": "RANDOM",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "char_on",
+   "name": "CHAR ON",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "sat_on",
+   "name": "SAT ON",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "lim_on",
+   "name": "LIMIT ON",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "prepost",
+   "name": "CHAR PRE",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "dly_on",
+   "name": "DELAY ON",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "d_mode",
+   "name": "TAPE/DIGI",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "d_sync",
+   "name": "SYNC",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "d_hold",
+   "name": "HOLD",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "d_add",
+   "name": "ADD",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "d_rev",
+   "name": "REVERSE",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "verb_on",
+   "name": "VERB ON",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gate_on",
+   "name": "GATE ON",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "stutter",
+   "name": "STUTTER",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "duck_on",
+   "name": "DUCK ON",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gs1",
+   "name": "STEP 1",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gs2",
+   "name": "STEP 2",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gs3",
+   "name": "STEP 3",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gs4",
+   "name": "STEP 4",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gs5",
+   "name": "STEP 5",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gs6",
+   "name": "STEP 6",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gs7",
+   "name": "STEP 7",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gs8",
+   "name": "STEP 8",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gs9",
+   "name": "STEP 9",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gs10",
+   "name": "STEP 10",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gs11",
+   "name": "STEP 11",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gs12",
+   "name": "STEP 12",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gs13",
+   "name": "STEP 13",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gs14",
+   "name": "STEP 14",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gs15",
+   "name": "STEP 15",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "gs16",
+   "name": "STEP 16",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "capture",
+   "name": "CAPTURE",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "l_rec",
+   "name": "REC",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "l_play",
+   "name": "PLAY",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "l_stop",
+   "name": "STOP",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "l_rev",
+   "name": "REVERSE",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "l_half",
+   "name": "HALF",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "l_double",
+   "name": "DOUBLE",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "l_clear",
+   "name": "CLEAR",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "to_grains",
+   "name": "TO GRAINS",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "do_stretch",
+   "name": "RENDER",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "undo",
+   "name": "UNDO",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "l1_sync",
+   "name": "LFO1 SYNC",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "l2_sync",
+   "name": "LFO2 SYNC",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "l3_sync",
+   "name": "LFO3 SYNC",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_1",
+   "name": "1",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_2",
+   "name": "2",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_3",
+   "name": "3",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_4",
+   "name": "4",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_5",
+   "name": "5",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_6",
+   "name": "6",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_7",
+   "name": "7",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_8",
+   "name": "8",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_9",
+   "name": "9",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_0",
+   "name": "0",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_q",
+   "name": "Q",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_w",
+   "name": "W",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_e",
+   "name": "E",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_r",
+   "name": "R",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_t",
+   "name": "T",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_y",
+   "name": "Y",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_u",
+   "name": "U",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_i",
+   "name": "I",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_o",
+   "name": "O",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_p",
+   "name": "P",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_a",
+   "name": "A",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_s",
+   "name": "S",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_d",
+   "name": "D",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_f",
+   "name": "F",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_g",
+   "name": "G",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_h",
+   "name": "H",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_j",
+   "name": "J",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_k",
+   "name": "K",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_l",
+   "name": "L",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_z",
+   "name": "Z",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_x",
+   "name": "X",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_c",
+   "name": "C",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_v",
+   "name": "V",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_b",
+   "name": "B",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_n",
+   "name": "N",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_m",
+   "name": "M",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_space",
+   "name": "SPACE",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_del",
+   "name": "DEL",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_clr",
+   "name": "CLEAR",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_go",
+   "name": "GO",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "kb_close",
+   "name": "CLOSE",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "st_name",
+   "name": "STATION",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "st_title",
+   "name": "NOW PLAYING",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "st_info",
+   "name": "INFO",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "page_txt",
+   "name": "PAGE",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "query",
+   "name": "SEARCH TEXT",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "phone_txt",
+   "name": "PHONE",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "air_txt",
+   "name": "AIRPLAY",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "tape_txt",
+   "name": "TAPE",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "readout",
+   "name": "READOUT",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "row1",
+   "name": "STATION 1",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "row2",
+   "name": "STATION 2",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "row3",
+   "name": "STATION 3",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "row4",
+   "name": "STATION 4",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "row5",
+   "name": "STATION 5",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "row6",
+   "name": "STATION 6",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "row7",
+   "name": "STATION 7",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "row8",
+   "name": "STATION 8",
+   "display": "string",
+   "min": 0,
+   "max": 1,
+   "default": 0
+  },
+  {
+   "key": "view",
+   "name": "VIEW",
+   "options": [
+    "LIST",
+    "KEYS",
+    "PHONE",
+    "AIRPLAY"
+   ],
+   "default": 0
+  }
+ ]
+}
