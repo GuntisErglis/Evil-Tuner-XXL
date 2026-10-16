@@ -58,12 +58,12 @@ jobs:
         run: |
           python3 third_party/mpc-vst-plugins/tools/release.py \
             --so build/arm/evil_tuner_xxl.so \
-            --skin "build/skin/ANDREALPHEUS - VST - Evil Tuner XXL" \
+            --skin "build/skin/L'Cronx - VST - Evil Tuner XXL" \
             --entry build/pluginlist-entry.xml \
             --version "${{ steps.ver.outputs.version }}" \
             --extra build/helpers:bin \
             --user-data user_data \
-            --about "Evil Tuner XXL by ANDREALPHEUS: internet radio, phone (Roc) and AirPlay into an MPC track, through grains, filter, character, saturator, Erica-style delay, reverb, trance gate and a looper" \
+            --about "Evil Tuner XXL by L'Cronx: internet radio, phone (Roc) and AirPlay into an MPC track, through grains, filter, character, saturator, Erica-style delay, reverb, trance gate and a looper" \
             --requires "a network (Wi-Fi or a phone hotspot)" \
             --id evil-tuner-xxl --repo sunskiefer/Evil-Tuner-XXL --license GPL-3.0-or-later \
             -o dist

@@ -2,12 +2,12 @@
 # Build Evil Tuner XXL for MPC OS Gen1 (armv7-a hard-float, glibc <= 2.31 so it also loads on MPC OS 2.x).
 #   ./build.sh                    (helpers/build_helpers.sh first, once: the static helper programs in build/helpers)
 # Needs: python3 + Pillow, numpy, scipy; a host gcc (for shadow_art); Zig (pip install ziglang). No Docker.
-# Output: build/package/ANDREALPHEUS - VST - Evil Tuner XXL/  (skin + evil_tuner_xxl.so + bin/)
+# Output: build/package/L'Cronx - VST - Evil Tuner XXL/  (skin + evil_tuner_xxl.so + bin/)
 set -euo pipefail
 cd "$(dirname "$0")"
 MPC_VST="${MPC_VST:-$PWD/third_party/mpc-vst-plugins}"
 ZIG="${ZIG:-python3 -m ziglang}"
-NAME="ANDREALPHEUS - VST - Evil Tuner XXL"
+NAME="L'Cronx - VST - Evil Tuner XXL"
 . ./build_srcs.sh
 python3 tools/gen_params.py
 python3 tools/panel.py --check

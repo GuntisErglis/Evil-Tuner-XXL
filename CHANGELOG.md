@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+- Packed under **L'Cronx**: the plugin folder is now `L'Cronx - VST - Evil Tuner XXL` and MPC lists the maker as L'Cronx. Nothing else
+  changed from 0.1.0. If you installed 0.1.0, run its `uninstall.sh` first (copy out anything you saved inside the plugin
+  folder), then install 0.1.1. The installer handles the ' in the folder name.
+
 ## 0.1.0
 
 First release (offline-tested; not yet run on a device).

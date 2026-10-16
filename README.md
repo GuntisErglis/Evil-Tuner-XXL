@@ -444,7 +444,7 @@ decoder; the ARM AirPlay receiver starting). **Not yet tested on a device.**
 
 ## Credits and licences
 
-- Developer: **L'Cronx** (ANDREALPHEUS). Knobs and keys from the LXRXXL / LXRXXL BAZZLINE artwork by **Suns Kiefer**. Build:
+- Developer: **L'Cronx** (L'Cronx). Knobs and keys from the LXRXXL / LXRXXL BAZZLINE artwork by **Suns Kiefer**. Build:
   Claude.
 - Concept inspired by the **Endorphin.es Evil Pet**; no affiliation, no code.
 - **Loop Saboteur** output stages (`OutputStage.h`) by Stephen McLeod Blythe / clickysteve, GPL-3.0; the drive shapes after
