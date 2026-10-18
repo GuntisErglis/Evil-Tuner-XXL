@@ -53,7 +53,7 @@ KIWI_SAMPLE = {
     "row1": (0, "PALLAS, LAPLAND  FI  2/8", 1), "row2": (0, "PARAINEN  FI  1/4", 0), "row3": (0, "LOPPI (OH1CT)  FI  FULL", 0),
     "row4": (0, "ASIKKALA  FI  0/4", 0), "row5": (0, "KUOPIO  FI  3/8", 0), "row6": (0, "SM2BYC  SE  1/4", 0),
     "row7": (0, "LA2G  NO  OFFLINE", 0), "row8": (0, "SOENDERBORG  DK  2/4", 0),
-    "kiwi_band": (8 / 30, "49M", 0), "kiwi_tune": (34 / 500, "6070.00 kHz", 0), "kiwi_fine": (0.5, "0 Hz", 0),
+    "kiwi_band": (8 / 30, "49M", 0), "kiwi_tune": (278 / 500, "6070.00 kHz", 0), "kiwi_fine": (0.5, "0 Hz", 0),
     "kiwi_bw": (0.6, "8.4 kHz", 0), "src_radio": (0, "", 0), "src_kiwi": (0, "", 1), "km_am": (0, "", 1), "top": (0, "", 0),
 }
 for i in (1, 3, 4, 6, 8, 9, 11, 12, 14, 16):

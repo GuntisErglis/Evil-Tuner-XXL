@@ -1941,9 +1941,9 @@
   {
    "key": "kiwi_tune",
    "name": "TUNE",
-   "default": 34,
+   "default": 278,
    "min": 0,
-   "max": 500,
+   "max": 499,
    "display": "int",
    "nudge_pct": 10,
    "dynamic_display": true

@@ -227,7 +227,7 @@ static const ParamDef PARAM_DEFS[P_COUNT] = {
     {"row8", "STATION 8", PK_ROW, 0, 0.0f, 0, 0.0f, 1.0f},
     {"view", "VIEW", PK_VIEW, 5, 0.0f, OPTS_VIEW, 0.0f, 1.0f},
     {"kiwi_band", "BAND", PK_KNOB, 31, 8.0f, OPTS_KIWI_BAND, 0.0f, 1.0f},
-    {"kiwi_tune", "TUNE", PK_KNOB, 0, 34.0f, 0, 0.0f, 500.0f},
+    {"kiwi_tune", "TUNE", PK_KNOB, 0, 278.0f, 0, 0.0f, 499.0f},
     {"kiwi_fine", "FINE", PK_KNOB, 0, 50.0f, 0, 0.0f, 100.0f},
     {"kiwi_bw", "FILTER", PK_KNOB, 0, 0.6f, 0, 0.0f, 1.0f},
     {"src_kiwi", "KIWISDR", PK_KEY, 0, 0.0f, 0, 0.0f, 1.0f},
@@ -241,7 +241,7 @@ static const ParamDef PARAM_DEFS[P_COUNT] = {
 /* KIWISDR: the bands (a list band has nlist > 0 and its frequencies in list) and the modes */
 enum { KM_AM, KM_USB, KM_LSB, KM_CW, KM_NFM };
 #define KIWI_NUM_MODES 5
-#define KIWI_TUNE_MAX 500
+#define KIWI_TUNE_MAX 499
 static const char *const KIWI_MODE_NAMES[] = {"AM", "USB", "LSB", "CW", "NFM"};
 typedef struct { const char *name; double lo, hi, step; int mode; double def; int nlist; const double *list; } KiwiBand;
 static const double KIWI_LIST_28[] = {2500.0, 3330.0, 4996.0, 5000.0, 7850.0, 9996.0, 10000.0, 14670.0, 14996.0, 15000.0, 20000.0};

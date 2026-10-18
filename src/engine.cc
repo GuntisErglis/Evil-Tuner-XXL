@@ -135,9 +135,17 @@ const KiwiBand& kband(const Inst* s) { return KIWI_BANDS[std::max(0, std::min(KI
 int kband_steps(const KiwiBand& b) { return b.nlist ? b.nlist - 1 : (int)lround((b.hi - b.lo) / b.step); }
 int kband_default(const KiwiBand& b) { return b.nlist ? 0 : (int)lround((b.def - b.lo) / b.step); }
 
+// TUNE moves one step (or one list entry) a detent and goes round the band: its 0..KIWI_TUNE_MAX holds every band at
+// least once, so a knob never stops dead at a band's end (and MPC's view of it stays the plugin's).
+int kiwi_step(const Inst* s) {
+  int n = kband_steps(kband(s)) + 1;
+  int t = std::max(0, (int)lroundf(s->v[P_KIWI_TUNE]));
+  return t % n;
+}
+
 double kiwi_khz(const Inst* s) {
   const KiwiBand& b = kband(s);
-  int t = std::max(0, std::min((int)lroundf(s->v[P_KIWI_TUNE]), kband_steps(b)));
+  int t = kiwi_step(s);
   double f = b.nlist ? b.list[t] : b.lo + t * b.step;
   f += ((int)lroundf(s->v[P_KIWI_FINE]) - 50) * 0.02;
   return f < 0 ? 0 : f;
@@ -400,7 +408,11 @@ void set_kiwi_mode(Inst* s, int m) {
 // BAND: the band's own frequency, mode and the fine tuning at zero
 void kiwi_band_changed(Inst* s) {
   const KiwiBand& b = kband(s);
-  s->v[P_KIWI_TUNE] = (float)kband_default(b);
+  int n = kband_steps(b) + 1, d = kband_default(b);
+  int t = d + (int)lround((KIWI_TUNE_MAX / 2.0 - d) / n) * n;   // the band's own frequency, near the middle of the knob
+  while (t > KIWI_TUNE_MAX) t -= n;
+  while (t < 0) t += n;
+  s->v[P_KIWI_TUNE] = (float)t;
   s->v[P_KIWI_FINE] = 50.f;
   s->kmode = b.mode;
   moved(s, "kiwi_tune");
@@ -1230,10 +1242,6 @@ void set_param(void* p, const char* k, const char* val) {
   switch (d.kind) {
     case PK_KNOB: {
       float f = knob_value(i, (float)atof(val));
-      if (i == P_KIWI_TUNE) {   // not past the band's end: the knob stops there
-        float top = (float)kband_steps(kband(s));
-        if (f > top) { f = top; moved(s, "kiwi_tune"); }
-      }
       bool changed = s->v[i] != f;
       s->v[i] = f;
       if (changed) {

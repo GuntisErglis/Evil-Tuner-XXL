@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0
+- **KIWISDR**, a fourth source: live shortwave (10 kHz to 30 MHz) from public KiwiSDR receivers, tuned from the MPC.
+  A list of public receivers (plus your own in `user_data/kiwisdr.txt`) with their listeners, FULL or OFFLINE; BAND
+  (broadcast and ham bands, LF / LW / MW, CB, NDB beacons, time signals, VOLMET, weather fax), TUNE (one channel a
+  detent), FINE (20 Hz steps), FILTER and the AM / USB / LSB / CW / NFM keys; the S-meter in the window; Q-Link page
+  RADIO 2. A session the receiver ends is not reopened; a dropped network is retried three times.
+- The new parameters come after the old ones: projects saved with 0.1.x open with their values.
+- `build.sh` can build with a GCC cross toolchain instead of Zig (`ARM_GCC=...`).
+
 ## 0.1.1
 - Packed under **L'Cronx**: the plugin folder is now `L'Cronx - VST - Evil Tuner XXL` and MPC lists the maker as L'Cronx. Nothing else
   changed from 0.1.0. If you installed 0.1.0, run its `uninstall.sh` first (copy out anything you saved inside the plugin

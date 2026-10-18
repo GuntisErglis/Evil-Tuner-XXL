@@ -138,7 +138,8 @@ VIEWS = [("view", "VIEW", ["LIST", "KEYS", "PHONE", "AIRPLAY", "KIWI"])]
 
 # ---- KIWISDR (0.2.0): appended after everything above, so the older indices stay where projects saved them.
 # The bands BAND steps through: (name, low kHz, high kHz, step kHz, default mode, default kHz), or a list band:
-# (name, [kHz, ...], mode). TUNE is the step (or the list entry) within the band; FINE adds -1..+1 kHz in 20 Hz.
+# (name, [kHz, ...], mode). TUNE is the step (or the list entry) within the band, going round it (engine.cc kiwi_step);
+# FINE adds -1..+1 kHz in 20 Hz.
 KIWI_MODES = ["AM", "USB", "LSB", "CW", "NFM"]
 KIWI_BANDS = [
     ("LF 10-150", 10, 150, 0.5, "USB", 77.5), ("LW", 153, 279, 9, "AM", 198), ("NDB 280-530", 280, 530, 1, "CW", 400),
@@ -156,11 +157,11 @@ KIWI_BANDS = [
     ("VOLMET", [3413, 5505, 6604, 8957, 10051, 11253, 13264], "USB"),
     ("WEATHER FAX", [2616.6, 3853.1, 4608.1, 7878.1, 8038.1, 13880.6], "USB"),
 ]
-KIWI_TUNE_MAX = 500     # the most steps a band has (15M HAM: 450)
+KIWI_TUNE_MAX = 499     # the most steps a band has (15M HAM: 450); not a multiple of 100, so a data wheel click (1/100) is a nudge
 # knobs that are not 0..1: (key, name, default, options or None, extra params.json fields)
 KNOBS2 = [
     ("kiwi_band", "BAND", 8, [b[0] for b in KIWI_BANDS], {"qlink_ticks": 2}),
-    ("kiwi_tune", "TUNE", 34, None, {"min": 0, "max": KIWI_TUNE_MAX, "display": "int", "nudge_pct": 10,
+    ("kiwi_tune", "TUNE", 278, None, {"min": 0, "max": KIWI_TUNE_MAX, "display": "int", "nudge_pct": 10,
                                      "dynamic_display": True}),
     ("kiwi_fine", "FINE", 50, None, {"min": 0, "max": 100, "display": "int", "nudge_pct": 10, "dynamic_display": True}),
     ("kiwi_bw", "FILTER", 0.6, None, {"min": 0, "max": 1, "dynamic_display": True}),
