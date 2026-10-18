@@ -26,6 +26,7 @@ static const char *const OPTS_L3_WAVE[] = {"SINE", "TRI", "SAW UP", "SAW DN", "S
 static const char *const OPTS_L3_DEST[] = {"OFF", "POSITION", "SIZE", "PITCH", "GRAINS", "SPREAD", "CLOUD", "DETUNE", "SHAPE", "CUTOFF", "RESONANCE", "GRAIN MIX", "CHAR INT", "SAT AMOUNT", "DELAY TIME", "DELAY FB", "DELAY WET", "VERB MIX", "GATE DEPTH", "LOOP SPEED", "VOLUME"};
 static const char *const OPTS_FOL_DEST[] = {"OFF", "POSITION", "SIZE", "PITCH", "GRAINS", "SPREAD", "CLOUD", "DETUNE", "SHAPE", "CUTOFF", "RESONANCE", "GRAIN MIX", "CHAR INT", "SAT AMOUNT", "DELAY TIME", "DELAY FB", "DELAY WET", "VERB MIX", "GATE DEPTH", "LOOP SPEED", "VOLUME"};
 static const char *const OPTS_KIWI_BAND[] = {"LF 10-150", "LW", "NDB 280-530", "MW", "120M", "90M", "75M", "60M", "49M", "41M", "31M", "25M", "22M", "19M", "16M", "15M", "13M", "11M", "160M HAM", "80M HAM", "40M HAM", "30M HAM", "20M HAM", "17M HAM", "15M HAM", "12M HAM", "10M HAM", "CB 27 MHZ", "TIME SIGNALS", "VOLMET", "WEATHER FAX"};
+static const char *const OPTS_KIWI_STEP[] = {"10 Hz", "100 Hz", "500 Hz", "1 kHz", "5 kHz", "9 kHz", "10 kHz", "100 kHz", "1 MHz"};
 static const char *const OPTS_VIEW[] = {"LIST", "KEYS", "PHONE", "AIRPLAY", "KIWI"};
 static const ParamDef PARAM_DEFS[P_COUNT] = {
     {"in_lvl", "INPUT LEVEL", PK_KNOB, 0, 0.7f, 0, 0.0f, 1.0f},
@@ -227,8 +228,8 @@ static const ParamDef PARAM_DEFS[P_COUNT] = {
     {"row8", "STATION 8", PK_ROW, 0, 0.0f, 0, 0.0f, 1.0f},
     {"view", "VIEW", PK_VIEW, 5, 0.0f, OPTS_VIEW, 0.0f, 1.0f},
     {"kiwi_band", "BAND", PK_KNOB, 31, 8.0f, OPTS_KIWI_BAND, 0.0f, 1.0f},
-    {"kiwi_tune", "TUNE", PK_KNOB, 0, 278.0f, 0, 0.0f, 499.0f},
-    {"kiwi_fine", "FINE", PK_KNOB, 0, 50.0f, 0, 0.0f, 100.0f},
+    {"kiwi_tune", "TUNE", PK_KNOB, 0, 0.5f, 0, 0.0f, 1.0f},
+    {"kiwi_fine", "FINE (OLD)", PK_KNOB, 0, 50.0f, 0, 0.0f, 100.0f},
     {"kiwi_bw", "FILTER", PK_KNOB, 0, 0.6f, 0, 0.0f, 1.0f},
     {"src_kiwi", "KIWISDR", PK_KEY, 0, 0.0f, 0, 0.0f, 1.0f},
     {"km_am", "AM", PK_KEY, 0, 0.0f, 0, 0.0f, 1.0f},
@@ -237,11 +238,15 @@ static const ParamDef PARAM_DEFS[P_COUNT] = {
     {"km_cw", "CW", PK_KEY, 0, 0.0f, 0, 0.0f, 1.0f},
     {"km_nfm", "NFM", PK_KEY, 0, 0.0f, 0, 0.0f, 1.0f},
     {"kiwi_txt", "RECEIVERS", PK_TEXT, 0, 0.0f, 0, 0.0f, 1.0f},
+    {"kiwi_step", "STEP", PK_KNOB, 9, 4.0f, OPTS_KIWI_STEP, 0.0f, 1.0f},
+    {"kiwi_enter", "ENTER kHz", PK_KEY, 0, 0.0f, 0, 0.0f, 1.0f},
 };
 /* KIWISDR: the bands (a list band has nlist > 0 and its frequencies in list) and the modes */
 enum { KM_AM, KM_USB, KM_LSB, KM_CW, KM_NFM };
 #define KIWI_NUM_MODES 5
 #define KIWI_TUNE_MAX 499
+static const double KIWI_STEP_KHZ[] = {0.01, 0.1, 0.5, 1.0, 5.0, 9.0, 10.0, 100.0, 1000.0};
+#define KIWI_NUM_STEPS 9
 static const char *const KIWI_MODE_NAMES[] = {"AM", "USB", "LSB", "CW", "NFM"};
 typedef struct { const char *name; double lo, hi, step; int mode; double def; int nlist; const double *list; } KiwiBand;
 static const double KIWI_LIST_28[] = {2500.0, 3330.0, 4996.0, 5000.0, 7850.0, 9996.0, 10000.0, 14670.0, 14996.0, 15000.0, 20000.0};

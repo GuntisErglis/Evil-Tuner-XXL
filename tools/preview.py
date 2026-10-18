@@ -47,13 +47,13 @@ SAMPLE = {
     "atk": (0.05, "2 ms", 0), "dec": (0.4, "150 ms", 0), "sus": (0.8, "80%", 0), "rel": (0.35, "116 ms", 0), "l2_sync": (0, "", 1),
 }
 KIWI_SAMPLE = {
-    "st_name": (0, "6070.00 kHz  AM", 0), "st_title": (0, "PALLAS, LAPLAND", 0),
+    "st_name": (0, "4625.00 kHz  AM", 0), "st_title": (0, "PALLAS, LAPLAND", 0),
     "st_info": (0, "S9+12 -61 dBm  BW 8.4k  BUF 0.6s  PLAYING", 0),
     "kiwi_txt": (0, "KIWISDR RECEIVERS   PAGE 1/5   TAP ONE TO LISTEN", 0),
     "row1": (0, "PALLAS, LAPLAND  FI  2/8", 1), "row2": (0, "PARAINEN  FI  1/4", 0), "row3": (0, "LOPPI (OH1CT)  FI  FULL", 0),
     "row4": (0, "ASIKKALA  FI  0/4", 0), "row5": (0, "KUOPIO  FI  3/8", 0), "row6": (0, "SM2BYC  SE  1/4", 0),
     "row7": (0, "LA2G  NO  OFFLINE", 0), "row8": (0, "SOENDERBORG  DK  2/4", 0),
-    "kiwi_band": (8 / 30, "49M", 0), "kiwi_tune": (278 / 500, "6070.00 kHz", 0), "kiwi_fine": (0.5, "0 Hz", 0),
+    "kiwi_band": (8 / 30, "49M", 0), "kiwi_tune": (0.5, "4625.00 kHz", 0), "kiwi_step": (4 / 8, "5 kHz", 0),
     "kiwi_bw": (0.6, "8.4 kHz", 0), "src_radio": (0, "", 0), "src_kiwi": (0, "", 1), "km_am": (0, "", 1), "top": (0, "", 0),
 }
 for i in (1, 3, 4, 6, 8, 9, 11, 12, 14, 16):

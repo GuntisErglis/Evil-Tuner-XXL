@@ -18,9 +18,9 @@ NEED = {0: ["row1", "row8", "genre", "country", "sort", "kbps", "in_lvl", "pg_pr
         1: ["kb_q", "kb_go", "query", "in_lvl"],
         2: ["phone_txt", "genre", "in_lvl"],
         3: ["air_txt", "genre", "in_lvl"],
-        4: ["row1", "row8", "kiwi_band", "kiwi_tune", "kiwi_fine", "kiwi_bw", "in_lvl", "pg_prev", "pg_next", "km_am",
-            "km_nfm", "kiwi_txt"]}
-NOT = {0: ["kiwi_band", "km_am", "kiwi_txt"], 4: ["genre", "country", "sort", "kbps", "search", "fav", "page_txt"]}
+        4: ["row1", "row8", "kiwi_band", "kiwi_tune", "kiwi_step", "kiwi_bw", "in_lvl", "pg_prev", "pg_next", "km_am",
+            "km_nfm", "kiwi_txt", "kiwi_enter"]}
+NOT = {0: ["kiwi_band", "km_am", "kiwi_txt", "kiwi_enter", "kiwi_fine"], 4: ["genre", "country", "sort", "kbps", "search", "fav", "page_txt", "kiwi_fine"]}
 
 
 def main(skin):

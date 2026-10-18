@@ -210,7 +210,9 @@ enum {
     P_KM_CW = 206,
     P_KM_NFM = 207,
     P_KIWI_TXT = 208,
-    P_COUNT = 209
+    P_KIWI_STEP = 209,
+    P_KIWI_ENTER = 210,
+    P_COUNT = 211
 };
 #define NUM_KNOBS 72
 #define FIRST_KEY 72

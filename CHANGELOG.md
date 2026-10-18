@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2
+- KIWISDR tuning is free: **TUNE** is an endless knob over the whole 0 .. 30 MHz (one **STEP** a detent, either way, no
+  band edges), **STEP** (new, in FINE's place) sets 10 Hz .. 1 MHz, **BAND** is a jump to a band's frequency, mode and
+  step, and **ENTER kHz** types a frequency in with the keyboard (e.g. 4625). The frequency is saved with the project.
+
 ## 0.2.1
 - Fixes 0.2.0's RADIO page on the device: the station / receiver list, the page keys, SEARCH / BROWSE / FAVS / FAV and the
   GENRE / COUNTRY / SORT / MAX KBPS knobs didn't show, and the 80 and 120 px knobs had no size. MPC shows a part only

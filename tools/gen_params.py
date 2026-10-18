@@ -138,8 +138,8 @@ VIEWS = [("view", "VIEW", ["LIST", "KEYS", "PHONE", "AIRPLAY", "KIWI"])]
 
 # ---- KIWISDR (0.2.0): appended after everything above, so the older indices stay where projects saved them.
 # The bands BAND steps through: (name, low kHz, high kHz, step kHz, default mode, default kHz), or a list band:
-# (name, [kHz, ...], mode). TUNE is the step (or the list entry) within the band, going round it (engine.cc kiwi_step);
-# FINE adds -1..+1 kHz in 20 Hz.
+# (name, [kHz, ...], mode). BAND jumps to the band's frequency, mode and step; from there TUNE moves freely over
+# 0..30 MHz (an endless knob: a STEP a detent; in a list band, the next entry), and ENTER kHz types a frequency in.
 KIWI_MODES = ["AM", "USB", "LSB", "CW", "NFM"]
 KIWI_BANDS = [
     ("LF 10-150", 10, 150, 0.5, "USB", 77.5), ("LW", 153, 279, 9, "AM", 198), ("NDB 280-530", 280, 530, 1, "CW", 400),
@@ -161,13 +161,19 @@ KIWI_TUNE_MAX = 499     # the most steps a band has (15M HAM: 450); not a multip
 # knobs that are not 0..1: (key, name, default, options or None, extra params.json fields)
 KNOBS2 = [
     ("kiwi_band", "BAND", 8, [b[0] for b in KIWI_BANDS], {"qlink_ticks": 2}),
-    ("kiwi_tune", "TUNE", 278, None, {"min": 0, "max": KIWI_TUNE_MAX, "display": "int", "nudge_pct": 10,
-                                     "dynamic_display": True}),
-    ("kiwi_fine", "FINE", 50, None, {"min": 0, "max": 100, "display": "int", "nudge_pct": 10, "dynamic_display": True}),
+    # endless: the engine reads each move from the middle and puts the knob back there (engine.cc kiwi_turn)
+    ("kiwi_tune", "TUNE", 0.5, None, {"min": 0, "max": 1, "dynamic_display": True}),
+    # 0.2.0's FINE: unused since 0.2.2 (STEP replaced it), kept so parameter indices stay where projects saved them
+    ("kiwi_fine", "FINE (OLD)", 50, None, {"min": 0, "max": 100, "display": "int"}),
     ("kiwi_bw", "FILTER", 0.6, None, {"min": 0, "max": 1, "dynamic_display": True}),
 ]
 KEYS2 = [("src_kiwi", "KIWISDR")] + [("km_%s" % m.lower(), m) for m in KIWI_MODES]
 TEXTS2 = [("kiwi_txt", "RECEIVERS")]
+# appended (0.2.2): TUNE's step, and typing a frequency in
+KIWI_STEPS = [("10 Hz", 0.01), ("100 Hz", 0.1), ("500 Hz", 0.5), ("1 kHz", 1), ("5 kHz", 5), ("9 kHz", 9), ("10 kHz", 10),
+              ("100 kHz", 100), ("1 MHz", 1000)]
+KNOBS3 = [("kiwi_step", "STEP", 4, [k for k, _ in KIWI_STEPS], {"qlink_ticks": 2})]
+KEYS3 = [("kiwi_enter", "ENTER kHz")]
 
 
 def params():
@@ -199,6 +205,13 @@ def params():
         out.append({"key": key, "name": name, "display": "string", "min": 0, "max": 1, "default": 0, "kind": "KEY"})
     for key, name in TEXTS2:
         out.append({"key": key, "name": name, "display": "string", "min": 0, "max": 1, "default": 0, "kind": "TEXT"})
+    # appended (0.2.2)
+    for key, name, d, opts, extra in KNOBS3:
+        e = {"key": key, "name": name, "default": d, "kind": "KNOB", "options": opts}
+        e.update(extra)
+        out.append(e)
+    for key, name in KEYS3:
+        out.append({"key": key, "name": name, "display": "string", "min": 0, "max": 1, "default": 0, "kind": "KEY"})
     return out
 
 
@@ -222,7 +235,7 @@ def main():
          "enum { PK_KNOB, PK_KEY, PK_TEXT, PK_ROW, PK_VIEW };",
          "/* lo, hi: a knob's range in its own units (0..1, or whole numbers for a \"display\": \"int\" knob) */",
          "typedef struct { const char *key, *name; unsigned char kind, nopts; float def; const char *const *opts; float lo, hi; } ParamDef;"]
-    for key, name, d, opts, *_ in KNOBS + KNOBS2:
+    for key, name, d, opts, *_ in KNOBS + KNOBS2 + KNOBS3:
         if opts:
             M.append("static const char *const OPTS_%s[] = {%s};" % (key.upper(), ", ".join('"%s"' % o for o in opts)))
     M.append("static const char *const OPTS_VIEW[] = {%s};" % ", ".join('"%s"' % o for o in VIEWS[0][2]))
@@ -238,6 +251,8 @@ def main():
     M.append("enum { %s };" % ", ".join("KM_%s" % m for m in KIWI_MODES))
     M.append("#define KIWI_NUM_MODES %d" % len(KIWI_MODES))
     M.append("#define KIWI_TUNE_MAX %d" % KIWI_TUNE_MAX)
+    M.append("static const double KIWI_STEP_KHZ[] = {%s};" % ", ".join(repr(float(v)) for _, v in KIWI_STEPS))
+    M.append("#define KIWI_NUM_STEPS %d" % len(KIWI_STEPS))
     M.append("static const char *const KIWI_MODE_NAMES[] = {%s};" % ", ".join('"%s"' % m for m in KIWI_MODES))
     M.append("typedef struct { const char *name; double lo, hi, step; int mode; double def; int nlist; const double *list; } KiwiBand;")
     for i, b in enumerate(KIWI_BANDS):

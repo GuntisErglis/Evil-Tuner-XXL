@@ -219,10 +219,13 @@ and the frequency, the receiver demodulates and sends the audio (about 12 kHz wi
 
 | Knob | |
 |---|---|
-| **BAND** | where to listen: LF, LW, MW, the broadcast bands **120M** to **11M**, the ham bands **160M** to **10M**, **CB**, **NDB** beacons, and three lists: **TIME SIGNALS**, **VOLMET** (aviation weather), **WEATHER FAX**. A band sets its usual mode and a busy frequency. |
-| **TUNE** | one channel per detent (5 kHz in a broadcast band, 9 kHz on LW / MW, 1 kHz on the ham bands, the next entry in a list); it goes round the band |
-| **FINE** | -1 .. +1 kHz in 20 Hz steps: for SSB voices that sound like ducks, or to put a carrier where you like it |
+| **BAND** | a jump: LF, LW, MW, the broadcast bands **120M** to **11M**, the ham bands **160M** to **10M**, **CB**, **NDB** beacons, and three lists: **TIME SIGNALS**, **VOLMET** (aviation weather), **WEATHER FAX**. A band sets its usual mode, a busy frequency and its step. |
+| **TUNE** | an endless knob over the whole 0 .. 30 MHz: one STEP per detent, either way, as far as you like (bands are only starting points); a fast spin or a drag moves several steps. In a list band it goes from entry to entry. |
+| **STEP** | how far a TUNE detent goes: 10 Hz, 100 Hz, 500 Hz, 1, 5, 9, 10, 100 kHz, 1 MHz (10 or 100 Hz for SSB voices that sound like ducks) |
 | **FILTER** | the bandwidth, within the mode's range (AM 3..12 kHz, SSB 1.5..3.6 kHz, CW 100..1000 Hz, NFM 6..12 kHz) |
+
+**ENTER kHz** (between the page keys) opens the keyboard for a frequency: type it in kHz (`4625`; SPACE is the decimal
+point: `6075 2` = 6075.2) and press **GO**.
 
 The mode keys (in the second row in KIWISDR): **AM**, **USB**, **LSB**, **CW**, **NFM**. The window shows the frequency and
 mode, the receiver, the S-meter and dBm, the bandwidth and the buffer. Tuning goes to the receiver at once; you hear it

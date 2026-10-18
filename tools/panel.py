@@ -64,6 +64,7 @@ for i in range(8):
     c, r = i % 2, i // 2
     ROWS.append((T, "row%d" % (i + 1), 56 + c * 388, 196 + r * 58, 380, 50))
 key_row(T, [("pg_prev", "< PAGE"), ("pg_next", "PAGE >")], 448, 56, 824, "amber", 120, 36, views=[0, 4])
+KEYS.append((T, "kiwi_enter", 440, 448, 140, 36, "amber", "ENTER kHz", [4]))   # type a frequency (the keyboard)
 # the keyboard (view KEYS) in the list's place
 TEXTS.append((T, "query", 70, 166, 740, 30, 26, AMBER, "left", [1]))
 for r, chars in enumerate(["1234567890", "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]):
@@ -93,8 +94,8 @@ KNOBS += [(T, "genre", 952, 286, 120, "alu", RADIO_VIEWS), (T, "country", 1144, 
           (T, "in_lvl", 1164, 500, 80, "alu")]
 # KIWISDR's tuning in the same places: BAND and TUNE large, FINE and FILTER
 KNOBS += [(T, "kiwi_band", 952, 286, 120, "alu", [4]), (T, "kiwi_tune", 1144, 286, 120, "alu", [4]),
-          (T, "kiwi_fine", 922, 500, 80, "alu", [4]), (T, "kiwi_bw", 1043, 500, 80, "alu", [4])]
-QLINKS[T] = [["genre", "country", "sort", "kbps", "in_lvl"], ["kiwi_band", "kiwi_tune", "kiwi_fine", "kiwi_bw", "in_lvl"]]
+          (T, "kiwi_step", 922, 500, 80, "alu", [4]), (T, "kiwi_bw", 1043, 500, 80, "alu", [4])]
+QLINKS[T] = [["genre", "country", "sort", "kbps", "in_lvl"], ["kiwi_band", "kiwi_tune", "kiwi_step", "kiwi_bw", "in_lvl"]]
 
 # ------------------------------------------------------------------------------------------------ PET (modern)
 T = 1
