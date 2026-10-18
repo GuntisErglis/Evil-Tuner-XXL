@@ -27,6 +27,7 @@ SHADOW_ART="$PWD/build/tools/shadow_art" python3 "$MPC_VST/tools/gen_vst.py" vst
 [ -f build/params.h ] && [ -d "build/skin/$NAME/Plugin Skins" ]
 python3 tools/panel_art.py "build/skin/$NAME/Plugin Skins"
 python3 "$MPC_VST/tools/skin_check.py" "build/skin/$NAME"
+python3 tools/skin_views_check.py "build/skin/$NAME/Plugin Skins"
 
 TGT="-target arm-linux-gnueabihf.2.31 -mcpu=generic+v7a+vfp3d16-d32-neon+thumb2 -ffp-contract=off"
 CXX="$ZIG c++"; CC="$ZIG cc"; LINKX=""

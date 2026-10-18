@@ -472,9 +472,9 @@ def placed(dkey, name, index, rect, focus_on=True, views=None, view_index=None):
          "bounds": {"version": 2, "acceptsHWFocus": "Yes" if focus_on else "No", "showWhenDataModelInvalid": "Hide",
                     "whenVisible": "Always", "boundsType": "Absolute", "bounds": bounds_s(x, y, w, h),
                     "additionalInvalidatingHandles": []}}
-    if views:   # shown only while the view is one of these (MPC's IndexedEnabling)
-        c["bounds"]["additionalInvalidatingHandles"] = ["IndexedEnabling/%d/%d/Parameter %d" % (v, VIEW_COUNT, view_index)
-                                                        for v in views]
+    if views:   # shown only while the view is this one (MPC's IndexedEnabling)
+        assert len(views) == 1, "MPC shows a part only while ALL its IndexedEnabling handles hold: one view per copy"
+        c["bounds"]["additionalInvalidatingHandles"] = ["IndexedEnabling/%d/%d/Parameter %d" % (views[0], VIEW_COUNT, view_index)]
     return c
 
 
@@ -546,7 +546,13 @@ def build_page(sk, tab, preview=None):
     shown = bg.copy() if preview is not None else None
 
     def place(dkey, key, rect, views=None, focus_on=True):
-        kids.append(placed(dkey, key, sk.index[key], rect, focus_on, views, view_i))
+        # a control of several views is one copy per view, each with that view's handle: MPC ANDs a part's handles
+        # (two views on one part would never both hold, and the part would never show; seen on an MPC One, 0.2.0)
+        if views and len(views) > 1:
+            for v in views:
+                kids.append(placed(dkey, key, sk.index[key], rect, focus_on, [v], view_i))
+        else:
+            kids.append(placed(dkey, key, sk.index[key], rect, focus_on, views, view_i))
 
     # ---- knobs: a filmstrip and MPC's value text under it
     names = {p["key"]: p["name"] for p in sk.params}
@@ -556,7 +562,8 @@ def build_page(sk, tab, preview=None):
         views = views[0] if views else None
         name = knob_strip(sk, look, s)
         lab_y = s + 4 if classic else s + 28   # modern: the name is printed between the knob and its value
-        gap = min([abs(cx - c2) for t2, k2, c2, y2, *_ in P.KNOBS if t2 == tab and k2 != key and abs(y2 - cy) < 20] + [200])
+        # the nearest neighbour in the row (a knob of another view in the same place is not a neighbour)
+        gap = min([abs(cx - c2) for t2, k2, c2, y2, *_ in P.KNOBS if t2 == tab and k2 != key and abs(y2 - cy) < 20 and c2 != cx] + [200])
         tw, th = min(max(s + 40, 140), gap - 4), lab_y + 26
         tw -= tw % 2
         dkey = "etKnob_%s_%d_%s" % (look, s, "c" if classic else "m")

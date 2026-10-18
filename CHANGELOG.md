@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+- Fixes 0.2.0's RADIO page on the device: the station / receiver list, the page keys, SEARCH / BROWSE / FAVS / FAV and the
+  GENRE / COUNTRY / SORT / MAX KBPS knobs didn't show, and the 80 and 120 px knobs had no size. MPC shows a part only
+  while all of its view conditions hold, so each view now gets its own copy; knobs sharing a place no longer squeeze
+  each other to zero width. `tools/skin_views_check.py` (run by build.sh) checks both.
+
 ## 0.2.0
 - **KIWISDR**, a fourth source: live shortwave (10 kHz to 30 MHz) from public KiwiSDR receivers, tuned from the MPC.
   A list of public receivers (plus your own in `user_data/kiwisdr.txt`) with their listeners, FULL or OFFLINE; BAND
