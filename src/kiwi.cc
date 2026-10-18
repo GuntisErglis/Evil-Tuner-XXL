@@ -633,13 +633,15 @@ void KiwiDir::stop() {
   if (th_.joinable()) th_.join();
 }
 
-void KiwiDir::probe(const std::vector<std::string>& ids) {
-  std::lock_guard<std::mutex> lk(mu_);
+bool KiwiDir::probe(const std::vector<std::string>& ids) {
+  std::unique_lock<std::mutex> lk(mu_, std::try_to_lock);   // the audio thread asks: never waits (asks again later)
+  if (!lk.owns_lock()) return false;
   want_.clear();
   for (auto& id : ids)
     for (auto& r : list)
       if (r.id() == id) want_.push_back(r);
   cv_.notify_all();
+  return true;
 }
 
 bool KiwiDir::take(std::vector<KiwiRx>& status) {

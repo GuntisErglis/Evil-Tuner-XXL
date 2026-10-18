@@ -373,8 +373,7 @@ void kiwi_probe_page(Inst* s) {
     int i = s->kpage * NUM_ROWS + r;
     if (i < (int)s->kiwis.size()) ids.push_back(s->kiwis[i].id());
   }
-  s->kdir.probe(ids);
-  s->kprobe = false;
+  if (s->kdir.probe(ids)) s->kprobe = false;
 }
 
 void play_kiwi(Inst* s, const KiwiRx& r) {

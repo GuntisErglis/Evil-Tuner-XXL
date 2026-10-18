@@ -95,7 +95,8 @@ class KiwiDir {
   void start(const std::string& data_dir);
   void stop();
   std::vector<KiwiRx> list;                        // the audio / UI thread's copy (loaded once, at start)
-  void probe(const std::vector<std::string>& ids);  // the receivers on screen: ask their status (newest request wins)
+  bool probe(const std::vector<std::string>& ids);  // the receivers on screen: ask their status (newest request wins;
+                                                    // false: busy, ask again)
   bool take(std::vector<KiwiRx>& status);           // try_lock: probed receivers since the last take
   static std::vector<KiwiRx> builtin();
   static bool parse_line(const std::string& line, KiwiRx& rx);   // "host[:port][/path] [name...]"
