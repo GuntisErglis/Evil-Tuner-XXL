@@ -16,7 +16,7 @@ SAN="-fsanitize=address,undefined -fno-omit-frame-pointer"
 mkdir -p build/hosttest
 OBJS=""
 for f in $ENGINE_SRCS; do o=build/hosttest/$(echo $f | tr / _).o; g++ -std=gnu++17 -O1 -g -w $SAN $DEFS $INCS -I$W -Ibuild -c $f -o $o; OBJS="$OBJS $o"; done
-for f in $DF_SRCS; do o=build/hosttest/$(echo $f | tr / _).o; [ -f $o ] || g++ -std=gnu++11 -O2 -g -w $DEFS $INCS -c $f -o $o; OBJS="$OBJS $o"; done
+for f in $DF_SRCS $CL_SRCS; do o=build/hosttest/$(echo $f | tr / _).o; [ -f $o ] || g++ -std=gnu++11 -O2 -g -w $DEFS $INCS -c $f -o $o; OBJS="$OBJS $o"; done
 gcc -std=gnu11 -O1 -g $SAN -w -Ibuild -I$W -DHAS_DISPLAY_REV=1 -DHAS_SONG_POS=1 -DPARAM_TEXT_MAX=64 -c $W/vst2_wrap.c -o build/hosttest/wrap.o
 gcc -O1 -g $SAN -w -Ibuild -c $T/host_test.c -o build/hosttest/ht.o
 g++ $SAN build/hosttest/ht.o build/hosttest/wrap.o $OBJS -ldl -lpthread -lm -o build/hosttest/host_test
@@ -55,4 +55,24 @@ for s in range(1, 26):
 print("levels:", "ok" if ok else "FAIL")
 sys.exit(0 if ok else 1)
 PY
+echo "== 3. CLOUDS, synced grains, the looper and SAVE"
+REC=$(mktemp -d)
+ET_REC_DIR="$REC" build/host/host build/host/plugin /tmp/et_test2.wav 34 url:http://127.0.0.1:$PORT/test.mp3 \
+  at:3 engine=1 mix=0.8 grains=0.7 scale=1 at:5 cl_mode=1 at:7 cl_mode=2 at:9 cl_mode=3 at:11 cl_mode=4 at:13 cl_mode=5 \
+  at:15 cl_mode=0 grain_sync=3 at:16 engine=0 cloud=0.5 \
+  at:17 loop_len=4 press:auto_save press:l_rec at:23 press:l_rec at:26 press:l_rec \
+  at:27 press:rec_out press:send press:l_rec at:30 press:l_rec at:31 press:undo press:save at:33 show:readout | grep "^\[" 
+python3 - "$REC" <<'PY'
+import wave, glob, sys, numpy as np
+files = sorted(glob.glob(sys.argv[1] + "/eviltunerrec*.wav"))
+print("files:", [f.rsplit("/", 1)[1] for f in files])
+assert len(files) >= 3, "AUTO SAVE / SAVE wrote too few files"
+for f in files:
+    w = wave.open(f); assert (w.getnchannels(), w.getsampwidth(), w.getframerate()) == (2, 3, 44100), f
+w = wave.open('/tmp/et_test2.wav'); d = np.frombuffer(w.readframes(w.getnframes()), np.int16).reshape(-1, 2) / 32768
+bad = [s for s in range(3, 34) if not (1e-4 < float(np.sqrt((d[s*44100:(s+1)*44100] ** 2).mean())) < 0.9)]
+assert not bad, "silent or clipping seconds: %s" % bad
+print("levels: ok")
+PY
+rm -rf "$REC"
 echo PASSED

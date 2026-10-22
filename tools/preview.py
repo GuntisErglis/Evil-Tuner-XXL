@@ -46,6 +46,12 @@ SAMPLE = {
     "fol_amt": (0.3, "30%", 0), "fol_spd": (0.4, "40%", 0), "fol_dest": (0.45, "CUTOFF", 0),
     "atk": (0.05, "2 ms", 0), "dec": (0.4, "150 ms", 0), "sus": (0.8, "80%", 0), "rel": (0.35, "116 ms", 0), "l2_sync": (0, "", 1),
 }
+SAMPLE.update({"engine": (0, "CLOUDS", 0), "cl_mode": (0, "GRANULAR", 0), "scale": (0.14, "MINOR", 0),
+               "grain_sync": (0.33, "1/8", 0), "pitch": (0.65, "+7 st", 0), "grains": (0.55, "55%", 0),
+               "__name_grains": "DENSITY", "__name_shape": "TEXTURE", "__name_cloud": "FEEDBACK", "__name_detune": "CLOUD VERB",
+               "__name_mix": "CLOUDS MIX", "send": (0, "", 1), "auto_save": (0, "", 1),
+               "tape_txt": (0, "LOOP 0:16.0 (32.0 BEATS)  PLAYING  REC IN  SEND  AUTO SAVE", 0),
+               "readout": (0, "SAVED EVILTUNERREC07.WAV", 0)})
 for i in (1, 3, 4, 6, 8, 9, 11, 12, 14, 16):
     SAMPLE["gs%d" % i] = (0, "", 1)
 

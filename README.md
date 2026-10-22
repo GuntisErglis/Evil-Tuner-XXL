@@ -77,14 +77,14 @@ DISCOVER → Evil Tuner XXL → INSTALL → APPLY.
 **One line, on the device** (needs internet; save your project first, MPC restarts):
 
 ```sh
-cd /tmp && wget -qO et.zip https://github.com/sunskiefer/Evil-Tuner-XXL/releases/download/v0.1.0/Evil-Tuner-XXL-0.1.0-mpc-armv7.zip && unzip -qo et.zip && sh Evil-Tuner-XXL-0.1.0/install.sh
+cd /tmp && wget -qO et.zip https://github.com/sunskiefer/Evil-Tuner-XXL/releases/download/v0.2.0/Evil-Tuner-XXL-0.2.0-mpc-armv7.zip && unzip -qo et.zip && sh Evil-Tuner-XXL-0.2.0/install.sh
 ```
 
 **From a computer:** download the release zip, then
 
 ```sh
-scp -r Evil-Tuner-XXL-0.1.0 root@<device-ip>:/tmp/
-ssh root@<device-ip> sh /tmp/Evil-Tuner-XXL-0.1.0/install.sh
+scp -r Evil-Tuner-XXL-0.2.0 root@<device-ip>:/tmp/
+ssh root@<device-ip> sh /tmp/Evil-Tuner-XXL-0.2.0/install.sh
 ```
 
 The installer checks the device, copies the plugin folder to `/sdcard/Synths/`, backs up `MPC.settings`, registers the
@@ -195,7 +195,7 @@ Nothing to install: the MPC appears in Apple's own AirPlay list.
    button. On a Mac: Control Centre → Sound → **Evil Tuner XXL**.
 4. Play. The window shows the artist and title the iPhone sends.
 
-This is classic AirPlay (AirPlay 1) audio, the same thing that works with older speakers; any app that can AirPlay
+(0.1 listed the receiver but every Apple device refused to connect; fixed in 0.2.0.) This is classic AirPlay (AirPlay 1) audio, the same thing that works with older speakers; any app that can AirPlay
 audio can use it. The iPhone's volume slider is ignored on purpose: **INPUT LEVEL** sets the level. AirPlay adds a short
 delay (Apple's own buffer, about two seconds), so it's for playing material in, not for live playing on the phone.
 
@@ -213,15 +213,28 @@ everything works as at home.
 
 ![PET](docs/img/PET.png)
 
-The granular voice reads a buffer that always holds the last **8 seconds** of the source (or a frozen picture of it).
-It is off until **GRAIN MIX** is turned up.
+Two grain engines, picked with **ENGINE**:
+
+- **XXL GRAINS**: Evil Tuner's own. It reads a buffer that always holds the last **8 seconds** of the source (or a
+  frozen picture of it). KEYS plays it with eight voices.
+- **CLOUDS**: Mutable Instruments Clouds with the Parasites firmware (the engine RMXXXL uses), in six modes picked with
+  **CLOUDS MODE**: GRANULAR, STRETCH, LOOPING DELAY, SPECTRAL, OLIVERB, RESONESTOR. KEYS plays it one note at a time
+  (the last pad pressed sets the pitch and fires a grain); the oscillator layer still plays chords.
+
+The knobs' names follow the engine and the mode: in CLOUDS GRANULAR, GRAINS reads DENSITY, SHAPE TEXTURE, CLOUD
+FEEDBACK, DETUNE CLOUD VERB; in LOOPING DELAY, POSITION reads DELAY TIME and SIZE LOOP SIZE, and so on. The screen always
+says what a knob does. The engines are off until **GRAIN MIX** (CLOUDS MIX) is turned up.
+
+**SCALE** (CHROMATIC, MAJOR, MINOR, DORIAN, PENTATONIC, MINOR PENTA, 5THS + OCT, OCTAVES) keeps PITCH on the scale's notes,
+and CLOUD's scattered grains jump to the scale's intervals instead of only octaves. **GRAIN SYNC** (FREE, 1/4 .. 1/32,
+triplets) puts the grains on the beat grid at the MPC's tempo; GRAINS then sets the chance that a step plays.
 
 | Knob | |
 |---|---|
 | **POSITION** | how far back in the 8 s the grains read (0 = just now; turn up to read further back, or across a frozen buffer) |
 | **SIZE** | grain length, 8 ms .. 1 s |
-| **PITCH** | ±24 semitones (a detent at 0) |
-| **GRAINS** | how many grains a second, 1.5 .. 90 |
+| **PITCH** | ±24 semitones, whole semitones on the SCALE |
+| **GRAINS** | how many grains a second, 1.5 .. 90 (synced: the chance a step plays) |
 | **SPREAD** | scatters the read position (up to 1 s) and pans grains across the stereo field |
 | **CLOUD** | chaos: irregular timing, grains an octave up or down, grains played backwards |
 | **DETUNE** | each grain slightly out of tune (up to ±½ semitone): chorus to smear |
@@ -235,7 +248,7 @@ It is off until **GRAIN MIX** is turned up.
 | Key | |
 |---|---|
 | **FREEZE** | stops the buffer: the grains play the last 8 s over and over while the radio goes on |
-| **KEYS** | the pads / a keyboard play the grains (eight voices, pitched from C3 = no transposition, with the MOD page's envelope); off, the grains run on their own (a drone) |
+| **KEYS** | the pads / a keyboard play the grains (XXL GRAINS: eight voices; CLOUDS: the last note; C3 = no transposition, with the MOD page's envelope); off, the grains run on their own (a drone) |
 | **LP HP BP COMB DUAL** | the filter. COMB: a resonant comb tuned by CUTOFF (metallic, pitched). DUAL: one knob DJ filter, open in the middle, low-pass to the left, high-pass to the right |
 | **OSC** | the oscillator's wave: sine, triangle, saw, square (lit while OSC LEVEL is up) |
 | **RANDOM** | new grain and filter settings (not GRAIN MIX or VOLUME), like the Evil Pet's random button |
@@ -294,30 +307,46 @@ play grains.)
 ![TAPE](docs/img/TAPE.png)
 
 The **tape** always records the last **3 minutes** of the source (after INPUT LEVEL), whatever you do. Heard something good?
-It's already on tape.
+It's already on tape. A loop can be up to **3 minutes** long.
 
 | Key | |
 |---|---|
 | **CAPTURE** | the last **LOOP LENGTH** of the tape becomes the loop and plays (FREE: the last two bars) |
-| **REC** | empty: records a loop from now (LOOP LENGTH, or FREE until REC again). While a loop plays: overdub on / off |
-| **PLAY**, **STOP** | the loop |
+| **REC** | no loop playing: records a new loop (LOOP LENGTH, or FREE until REC again). A loop playing: **overdub**, REC again to stop |
+| **PLAY**, **STOP** | the loop (STOP also ends a recording or an overdub) |
+| **UNDO** | takes the last layer out (an overdub, a capture, a render, a clear); UNDO again puts it back |
+| **CLEAR** | empties the loop (UNDO brings it back) |
+| **SEND** | on: the loop goes through PET, the filter, FX, SPACE and GATE with the radio. Off: the loop plays clean at the end |
+| **REC OUT** | off (REC IN): REC and overdubs take the radio / phone / AirPlay as it comes in. On: they take what you hear, the whole processed sound |
 | **REVERSE**, **HALF**, **DOUBLE** | direction, half speed, double speed |
-| **CLEAR**, **UNDO** | UNDO brings back the loop before the last capture, overdub, render or clear |
 | **TO GRAINS** | the loop becomes the grains' buffer (frozen): PET plays the loop |
 | **RENDER** | renders the loop through **STRETCH** in the background (RENDER blinks), then plays the result |
+| **SAVE** | writes the loop to a WAV file (below) |
+| **AUTO SAVE** | on: every recording and every overdub, when it ends, is saved as a new file |
+
+**Overdubbing the radio on top of a loop**: with a loop playing, find a station (or play something from the phone) with
+the drums or sounds you want, press **REC**, and press it again to stop. With REC IN the incoming sound is added to the
+loop (OVERDUB FB sets how much of the old loop each pass keeps). With **REC OUT** what you hear replaces the loop as the
+play head passes: with SEND on, that is the loop sent through every effect again, so each pass re-processes it (resample
+through the chain); LOOP LEVEL then sets how much of the old loop stays.
+
+**Saving**: SAVE writes the loop as `eviltunerrec01.wav`, `eviltunerrec02.wav` ... (44.1 kHz stereo 24-bit) in
+`Force Documents/Evil Tuner XXL Recordings` (on an MPC: `MPC Documents/...`). Every save takes the next number; nothing is
+ever overwritten. The files show in the MPC's browser, ready for a sampler or an audio track. Saving happens in the
+background (SAVE blinks; the readout says `SAVED EVILTUNERREC07.WAV`); a REC pressed meanwhile starts as soon as it is done.
 
 | Knob | |
 |---|---|
-| **LOOP LENGTH** | FREE, 1/4 bar .. 8 bars, at the MPC's tempo |
+| **LOOP LENGTH** | FREE (up to 3 minutes), 1/4 bar .. 8 bars, at the MPC's tempo |
 | **LOOP START** | where in the loop it starts (rotates it) |
 | **LOOP SPEED** | ±1 octave, varispeed (a detent at x1.00) |
-| **LOOP LEVEL** | the loop's level |
+| **LOOP LEVEL** | the loop's level (with REC OUT: how much of the old loop stays each pass) |
 | **OVERDUB FB** | how much of the old loop each overdub pass keeps |
 | **LIVE/LOOP** | 0: the live source plus the loop; up: the live source fades out, leaving the loop |
 | **STRETCH** | PAULSTRETCH (2x .. 10x longer, smeared into pads), FREEZE (one moment held as a drone the loop's length), STUTTER (chunks repeated), CLOUD (scattered grains), HALF TAPE (an octave down, twice as long), REVERSE |
 | **STRETCH AMT** | the amount (PAULSTRETCH: how much longer; FREEZE: where in the loop) |
 
-The window above shows the tape's length, the loop's length in seconds and beats, and its state.
+The window above shows the loop's length in seconds and beats, its state and the switches (REC IN / OUT, SEND, AUTO SAVE).
 
 ## MOD: LFOs, follower, envelope
 
@@ -435,18 +464,21 @@ python3 tools/preview.py out/   # the pages as pictures
 ```
 
 `tools/gen_params.py` is the parameter list, `tools/panel.py` where everything sits, `tools/panel_art.py` draws the pages.
+`qlinks.json` is the Q-Link map (each page's knobs, in Q-Link order, "qlink-map 1" format): change it and rebuild to put
+other controls on the Q-Links (`python3 tools/panel.py --qlinks` lists them).
 Final artwork drops in as `art/bg/<PAGE>.png` (1280 x 628): the generated background is then replaced and the controls are
 drawn over it.
 
-Status of 0.1.0: tested offline (the engine and wrapper on x86 under ASan / UBSan; the ARM build loaded and run under QEMU;
-the radio path end to end with a local stream; the ARM Roc receiver with a Roc sender; MP3, AAC and Ogg through the ARM
-decoder; the ARM AirPlay receiver starting). **Not yet tested on a device.**
+Status of 0.2.0: tested on an Akai Force (MPC OS 3.9.1 with MockbaMod), and offline (the engine and wrapper on x86 under
+ASan / UBSan, the ARM build under QEMU, the radio path end to end with a local stream, the ARM Roc receiver with a Roc
+sender, the AirPlay receiver's Apple-Response checked the way an Apple device checks it).
 
 ## Credits and licences
 
 - Developer: **L'Cronx** (L'Cronx). Knobs and keys from the LXRXXL / LXRXXL BAZZLINE artwork by **Suns Kiefer**. Build:
   Claude.
 - Concept inspired by the **Endorphin.es Evil Pet**; no affiliation, no code.
+- **Clouds** (Emilie Gillet, Mutable Instruments) with the **Parasites** firmware (Matthias Puech), MIT, as RMXXXL vendors it.
 - **Loop Saboteur** output stages (`OutputStage.h`) by Stephen McLeod Blythe / clickysteve, GPL-3.0; the drive shapes after
   **The Good Bits** (clickysteve, MIT).
 - **Dragonfly Reverb** (Plate, Room) by Michael Willis and contributors, GPL-3.0, with freeverb3 (GPL).

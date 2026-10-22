@@ -23,6 +23,9 @@ extern "C" {
 #include "reverbs.h"
 #include "param_defs.h"
 #include "../third_party/loop-saboteur/Source/OutputStage.h"
+#include "clouds/dsp/granular_processor.h"
+#include <pthread.h>
+#include <time.h>
 
 using namespace et;
 
@@ -47,8 +50,8 @@ struct Voice {
 struct Inst {
   // ---- parameters
   float v[P_COUNT];
-  float eff[NUM_KNOBS];               // with modulation
-  float mod[NUM_KNOBS];
+  float eff[P_COUNT];                 // with modulation (knobs)
+  float mod[P_COUNT];
   // toggles (keys)
   bool freeze = false, keys_mode = false, char_on = true, sat_on = false, lim_on = true, char_pre = false;
   bool dly_on = true, verb_on = true, gate_on = false, stut_key = false, duck_on = false, lsync[3] = {false, false, false};
@@ -78,7 +81,7 @@ struct Inst {
   // ---- the engine
   Sources src;
   Directory dir;
-  Stretcher stretcher;
+  TapeWorker work;
   Tape tape;
   Looper looper;
   Grains grains;
@@ -108,6 +111,24 @@ struct Inst {
   double rd_frac = 0;
   float in_gain_sm = 0.f, vol_sm = 0.f;
   bool stretch_busy = false;
+  // ---- TAPE (0.2.0)
+  bool send = false, rec_out = false, auto_save = false;
+  bool pending_rec = false, pending_save = false, pending_capture = false;   // waiting for the worker to finish
+  bool layer_open = false;            // a recording or overdub is running (AUTO SAVE saves it when it closes)
+  std::string rec_dir;                // where SAVE writes
+  // ---- Clouds (0.2.0)
+  clouds::GranularProcessor* cl = nullptr;
+  uint8_t* cl_large = nullptr;
+  uint8_t* cl_small = nullptr;
+  int cl_mode_applied = 0, cl_reconf = 0;
+  float cl_mix = 0.f;                 // fades Clouds in / out when the engine changes
+  bool cl_trigger = false;
+  pthread_t cl_thread;
+  bool cl_thread_on = false;
+  volatile bool cl_quit = false;
+  pthread_mutex_t cl_mu;
+  pthread_cond_t cl_wake;
+  int last_note = -1;                 // KEYS: the note Clouds plays (the last one pressed)
   uint32_t clock = 0;                 // blocks
   uint32_t display_rev = 1;
   std::string data_dir, plugin_dir;
@@ -132,6 +153,14 @@ std::string value_text(const Inst* s, int p) {
     else snprintf(b, sizeof b, "%d ms", (int)lroundf(m));
     return std::string(b);
   };
+  bool clouds = opt(s, P_ENGINE) == 1;
+  if (clouds && (p == P_POS || p == P_SIZE || p == P_GRAINS || p == P_SHAPE || p == P_SPREAD || p == P_CLOUD || p == P_DETUNE)) {
+    if (p == P_GRAINS && opt(s, P_GRAIN_SYNC) && opt(s, P_CL_MODE) == 0) {
+      snprintf(b, sizeof b, "CHANCE %d%%", (int)lroundf((0.15f + 0.85f * v) * 100.f));
+      return b;
+    }
+    return pct(v);
+  }
   switch (p) {
     case P_IN_LVL: case P_VOLUME: {
       float g = p == P_VOLUME ? (v / 0.75f) * (v / 0.75f) : (v / 0.7f) * (v / 0.7f);
@@ -141,12 +170,15 @@ std::string value_text(const Inst* s, int p) {
     }
     case P_SIZE: return ms(expmap(v, 8.f, 1000.f));
     case P_PITCH: {
-      float st = (v - 0.5f) * 48.f;
-      if (fabsf(v - 0.5f) < 0.012f) st = 0;
-      snprintf(b, sizeof b, "%+.1f st", st);
+      int st = pitch_semis(v, opt(s, P_SCALE));
+      if (st == 0) return "0 st";
+      snprintf(b, sizeof b, "%+d st", st);
       return b;
     }
-    case P_GRAINS: snprintf(b, sizeof b, "%.1f /s", expmap(v, 1.5f, 90.f)); return b;
+    case P_GRAINS:
+      if (opt(s, P_GRAIN_SYNC)) { snprintf(b, sizeof b, "CHANCE %d%%", (int)lroundf((0.15f + 0.85f * v) * 100.f)); return b; }
+      snprintf(b, sizeof b, "%.1f /s", expmap(v, 1.5f, 90.f));
+      return b;
     case P_SHAPE: return v < 0.47f ? "PERC " + pct(1.f - v * 2.f) : (v > 0.53f ? "REVERSE " + pct(v * 2.f - 1.f) : "SMOOTH");
     case P_CUTOFF: {
       float hz;
@@ -196,6 +228,34 @@ std::string value_text(const Inst* s, int p) {
     case P_DEC: return ms(expmap(v, 5.f, 4000.f));
     case P_REL: return ms(expmap(v, 5.f, 8000.f));
     default: return pct(v);
+  }
+}
+
+// the PET knobs' names: XXL GRAINS' own, or what the knob does in Clouds' mode (the Clouds and Parasites manuals' names,
+// as RMXXXL shows them)
+const char* knob_name(const Inst* s, int p) {
+  if (opt(s, P_ENGINE) != 1) return PARAM_DEFS[p].name;
+  int m = std::max(0, std::min(5, opt(s, P_CL_MODE)));
+  //                                   GRANULAR       STRETCH       LOOPING DELAY  SPECTRAL      OLIVERB        RESONESTOR
+  static const char* kPos[6]    = {"POSITION",   "SCRUB",      "DELAY TIME", "BUFFER",     "PREDELAY",   "BURST"};
+  static const char* kSize[6]   = {"SIZE",       "WINDOW",     "LOOP SIZE",  "WARP",       "ROOM SIZE",  "CHORD"};
+  static const char* kShape[6]  = {"TEXTURE",    "FILTER",     "FILTER",     "QUANTIZE",   "DAMPING",    "DAMPING"};
+  static const char* kDens[6]   = {"DENSITY",    "DIFFUSION",  "DIFFUSION",  "REFRESH",    "DECAY",      "DECAY"};
+  static const char* kPitch[6]  = {"PITCH",      "PITCH",      "PITCH",      "PITCH",      "SHIMMER",    "PITCH"};
+  static const char* kSpread[6] = {"SPREAD",     "SPREAD",     "SPREAD",     "SPREAD",     "DIFFUSION",  "VOICES L/R"};
+  static const char* kFb[6]     = {"FEEDBACK",   "FEEDBACK",   "FEEDBACK",   "FEEDBACK",   "MOD SPEED",  "HARMONICS"};
+  static const char* kVerb[6]   = {"CLOUD VERB", "CLOUD VERB", "CLOUD VERB", "CLOUD VERB", "MOD AMOUNT", "SCATTER"};
+  switch (p) {
+    case P_POS: return kPos[m];
+    case P_SIZE: return kSize[m];
+    case P_SHAPE: return kShape[m];
+    case P_GRAINS: return kDens[m];
+    case P_PITCH: return kPitch[m];
+    case P_SPREAD: return kSpread[m];
+    case P_CLOUD: return kFb[m];
+    case P_DETUNE: return kVerb[m];
+    case P_MIX: return "CLOUDS MIX";
+    default: return PARAM_DEFS[p].name;
   }
 }
 
@@ -304,21 +364,71 @@ void randomize(Inst* s) {
   flash(s, "RANDOM GRAINS");
 }
 
-void loop_capture(Inst* s) {
+int capture_frames(Inst* s) {
   int k = opt(s, P_LOOP_LEN);
   double beats = k ? kLoopBeats[k] : 8.0;   // FREE: the last two bars
-  int frames = (int)(beats * 60.0 / s->tempo.bpm * kSR);
-  frames = std::min(frames, kLoopMax);
-  s->looper.keep_undo();
-  int got = s->tape.last(frames, s->looper.L.data(), s->looper.R.data());
-  s->looper.len = got;
-  s->looper.edge_fades();
-  s->looper.pos = 0;
-  s->looper.playing = got > 0;
-  s->looper.rec = s->looper.od = false;
-  char b[48];
-  snprintf(b, sizeof b, "CAPTURED %.1f S", got / kSR);
-  flash(s, got ? b : "THE TAPE IS EMPTY");
+  return std::min((int)(beats * 60.0 / s->tempo.bpm * kSR), kLoopMax);
+}
+
+// the worker's jobs: tried now, else kept pending and tried every block until the worker is free
+bool try_capture(Inst* s) {
+  Looper& L = s->looper;
+  if (L.rec || L.od) return false;
+  L.cp_left = 0;                        // a capture replaces the loop: the last overdub's copier stops
+  L.update_writing();
+  int frames = capture_frames(s);
+  return s->work.submit(TapeWorker::CAPTURE, &L, &s->tape, frames);
+}
+
+bool try_save(Inst* s) {
+  Looper& L = s->looper;
+  if (L.rec || L.od || L.length() <= 0) return false;
+  s->work.dir = s->rec_dir;
+  return s->work.submit(TapeWorker::SAVE, &L, nullptr);
+}
+
+void loop_capture(Inst* s) {
+  if (try_capture(s)) { s->pending_capture = false; flash(s, "CAPTURING..."); }
+  else { s->pending_capture = true; flash(s, "CAPTURE: WAITING FOR THE TAPE"); }
+}
+
+void request_save(Inst* s) {
+  if (s->looper.length() <= 0 && !s->looper.rec) { flash(s, "NO LOOP TO SAVE"); return; }
+  if (try_save(s)) { s->pending_save = false; flash(s, "SAVING..."); }
+  else s->pending_save = true;
+}
+
+// REC: a new loop, or an overdub on the playing loop, or the end of either
+void rec_press(Inst* s) {
+  Looper& L = s->looper;
+  if (L.rec) { L.end_rec(); L.update_writing(); s->layer_open = false; if (s->auto_save) request_save(s); return; }
+  if (L.od) {
+    L.od = false;
+    L.update_writing();
+    s->layer_open = false;
+    flash(s, "OVERDUB OFF (UNDO TAKES IT OUT)");
+    if (s->auto_save) request_save(s);
+    return;
+  }
+  // a new layer may not start while the worker holds the loop: announce `writing`, then check `busy`
+  L.writing.store(true);
+  if (s->work.busy.load() || s->work.swap_len.load() >= 0) {
+    L.update_writing();
+    s->pending_rec = true;
+    flash(s, "REC: WAITING FOR THE TAPE");
+    return;
+  }
+  s->pending_rec = false;
+  if (L.length() > 0 && L.playing) {
+    L.start_overdub();
+    flash(s, s->rec_out ? "OVERDUB (OUT): WHAT YOU HEAR BECOMES THE LOOP" : "OVERDUB: THE INPUT GOES ON TOP");
+  } else {
+    int k = opt(s, P_LOOP_LEN);
+    L.start_rec(k ? (int)(kLoopBeats[k] * 60.0 / s->tempo.bpm * kSR) : 0);
+    flash(s, k ? "RECORDING THE LOOP" : "RECORDING: REC AGAIN TO CLOSE THE LOOP");
+  }
+  s->layer_open = true;
+  L.update_writing();
 }
 
 void press(Inst* s, int p) {
@@ -420,39 +530,65 @@ void press(Inst* s, int p) {
     case P_DUCK_ON: s->duck_on = !s->duck_on; break;
     // ---- TAPE
     case P_CAPTURE: loop_capture(s); break;
-    case P_L_REC: {
+    case P_L_REC: rec_press(s); break;
+    case P_L_PLAY: if (s->looper.length()) { s->looper.playing = true; s->looper.pos = 0; } break;
+    case P_L_STOP: {
       Looper& L = s->looper;
+      bool closing = L.rec || L.od;
       if (L.rec) L.end_rec();
-      else if (L.len > 0 && L.playing) { L.od = !L.od; if (L.od) L.keep_undo(); flash(s, L.od ? "OVERDUB" : "OVERDUB OFF"); }
-      else {
-        int k = opt(s, P_LOOP_LEN);
-        L.start_rec(k ? (int)(kLoopBeats[k] * 60.0 / s->tempo.bpm * kSR) : 0);
-        flash(s, k ? "RECORDING THE LOOP" : "RECORDING: REC AGAIN TO CLOSE THE LOOP");
-      }
+      L.od = false;
+      L.playing = false;
+      L.update_writing();
+      s->pending_rec = false;
+      if (closing) { s->layer_open = false; if (s->auto_save) request_save(s); }
       break;
     }
-    case P_L_PLAY: if (s->looper.len) { s->looper.playing = true; s->looper.pos = 0; } break;
-    case P_L_STOP: s->looper.playing = false; s->looper.od = false; if (s->looper.rec) s->looper.end_rec(), s->looper.playing = false; break;
     case P_L_REV: s->looper.rev = !s->looper.rev; break;
     case P_L_HALF: s->looper.speed = s->looper.speed == -1 ? 0 : -1; break;
     case P_L_DOUBLE: s->looper.speed = s->looper.speed == 1 ? 0 : 1; break;
-    case P_L_CLEAR: s->looper.clear(); flash(s, "LOOP CLEARED (UNDO BRINGS IT BACK)"); break;
-    case P_UNDO: s->looper.undo(); flash(s, s->looper.len ? "UNDO" : "NOTHING TO UNDO"); break;
+    case P_L_CLEAR:
+      if (s->work.busy.load()) { flash(s, "WAIT: THE TAPE IS BUSY"); break; }
+      s->looper.clear();
+      s->looper.update_writing();
+      s->layer_open = s->pending_rec = false;
+      flash(s, "LOOP CLEARED (UNDO BRINGS IT BACK)");
+      break;
+    case P_UNDO:
+      if (s->work.busy.load() || s->work.swap_len.load() >= 0) { flash(s, "WAIT: THE TAPE IS BUSY"); break; }
+      flash(s, s->looper.undo() ? "UNDO (AGAIN: REDO)" : (s->looper.od || s->looper.rec ? "STOP THE RECORDING FIRST" : "NOTHING TO UNDO"));
+      break;
     case P_TO_GRAINS:
-      if (s->looper.len) { s->grains.load(s->looper.L.data(), s->looper.R.data(), s->looper.len); s->freeze = true; flash(s, "THE LOOP IS IN THE GRAINS (FREEZE)"); }
-      else flash(s, "NO LOOP: CAPTURE OR REC FIRST");
+      if (s->looper.length()) {
+        s->grains.load(s->looper.L(), s->looper.R(), std::min(s->looper.length(), kGrainBuf));
+        s->freeze = true;
+        flash(s, "THE LOOP IS IN THE GRAINS (FREEZE)");
+      } else flash(s, "NO LOOP: CAPTURE OR REC FIRST");
       break;
     case P_DO_STRETCH: {
-      if (!s->looper.len) { flash(s, "NO LOOP TO STRETCH"); break; }
-      StretchJob j;
-      j.kind = opt(s, P_STRETCH);
-      j.amt = s->v[P_STRETCH_AMT];
-      j.L.assign(s->looper.L.begin(), s->looper.L.begin() + s->looper.len);
-      j.R.assign(s->looper.R.begin(), s->looper.R.begin() + s->looper.len);
-      if (s->stretcher.submit(std::move(j))) { s->stretch_busy = true; flash(s, "RENDERING..."); }
-      else flash(s, "STILL RENDERING");
+      if (!s->looper.length()) { flash(s, "NO LOOP TO STRETCH"); break; }
+      if (s->looper.rec || s->looper.od) { flash(s, "STOP THE RECORDING FIRST"); break; }
+      s->work.skind = opt(s, P_STRETCH);
+      s->work.samt = s->v[P_STRETCH_AMT];
+      if (s->work.submit(TapeWorker::STRETCH, &s->looper, nullptr)) { s->stretch_busy = true; flash(s, "RENDERING..."); }
+      else flash(s, "STILL BUSY: TRY AGAIN IN A MOMENT");
       break;
     }
+    case P_SEND:
+      s->send = !s->send;
+      flash(s, s->send ? "SEND: THE LOOP GOES THROUGH PET, FX, SPACE, GATE" : "SEND OFF: THE LOOP PLAYS CLEAN");
+      break;
+    case P_REC_OUT:
+      s->rec_out = !s->rec_out;
+      flash(s, s->rec_out ? "REC OUT: RECORDS WHAT YOU HEAR" : "REC IN: RECORDS THE RADIO / PHONE / AIRPLAY");
+      break;
+    case P_SAVE:
+      if (s->looper.rec || s->looper.od) rec_press(s);   // closes the layer (AUTO SAVE then saves it)
+      if (!s->auto_save || s->looper.length() > 0) request_save(s);
+      break;
+    case P_AUTO_SAVE:
+      s->auto_save = !s->auto_save;
+      flash(s, s->auto_save ? "AUTO SAVE: EVERY RECORDING AND OVERDUB GOES TO A FILE" : "AUTO SAVE OFF");
+      break;
     // ---- MOD
     case P_L1_SYNC: s->lsync[0] = !s->lsync[0]; touch(s, P_L1_RATE); break;
     case P_L2_SYNC: s->lsync[1] = !s->lsync[1]; touch(s, P_L2_RATE); break;
@@ -507,8 +643,13 @@ bool led(const Inst* s, int p) {
     case P_GATE_ON: return s->gate_on;
     case P_STUTTER: return s->stut.active;
     case P_DUCK_ON: return s->duck_on;
-    case P_L_REC: return s->looper.rec || s->looper.od;
-    case P_L_PLAY: return s->looper.playing && s->looper.len > 0;
+    case P_L_REC: return s->looper.rec || s->looper.od || (s->pending_rec && ((s->clock >> 4) & 1));
+    case P_L_PLAY: return s->looper.playing && s->looper.length() > 0;
+    case P_SEND: return s->send;
+    case P_REC_OUT: return s->rec_out;
+    case P_AUTO_SAVE: return s->auto_save;
+    case P_SAVE: return (s->pending_save || s->work.running.load() == TapeWorker::SAVE) && ((s->clock >> 4) & 1);
+    case P_CAPTURE: return (s->pending_capture || s->work.running.load() == TapeWorker::CAPTURE) && ((s->clock >> 4) & 1);
     case P_L_REV: return s->looper.rev;
     case P_L_HALF: return s->looper.speed < 0;
     case P_L_DOUBLE: return s->looper.speed > 0;
@@ -564,17 +705,19 @@ std::string page_text(const Inst* s) {
 std::string tape_text(const Inst* s) {
   char b[128];
   const Looper& L = s->looper;
-  const char* st = L.rec ? "RECORDING" : (L.od ? "OVERDUB" : (L.playing && L.len ? "PLAYING" : (L.len ? "STOPPED" : "EMPTY")));
-  float beats = L.len / kSR * (float)s->tempo.bpm / 60.f;
-  snprintf(b, sizeof b, "TAPE %d:%02d   LOOP %.1f S (%.1f BEATS)  %s%s%s", s->tape.filled / ET_SR / 60, s->tape.filled / ET_SR % 60,
-           L.len / kSR, beats, st, L.rev ? "  REV" : "", L.speed < 0 ? "  HALF" : (L.speed > 0 ? "  DOUBLE" : ""));
+  int len = L.rec ? L.rec_len : L.length();
+  const char* st = L.rec ? "RECORDING" : (L.od ? "OVERDUB" : (L.playing && len ? "PLAYING" : (len ? "STOPPED" : "EMPTY")));
+  float beats = len / kSR * (float)s->tempo.bpm / 60.f;
+  snprintf(b, sizeof b, "LOOP %d:%04.1f (%.1f BEATS)  %s  REC %s%s%s%s%s", len / ET_SR / 60, fmodf(len / kSR, 60.f), beats, st,
+           s->rec_out ? "OUT" : "IN", s->send ? "  SEND" : "", s->auto_save ? "  AUTO SAVE" : "", L.rev ? "  REV" : "",
+           L.speed < 0 ? "  HALF" : (L.speed > 0 ? "  DOUBLE" : ""));
   return b;
 }
 
 std::string readout(const Inst* s) {
   if (s->clock < s->flash_until) return s->flash;
   if (s->touched >= 0 && s->clock - s->touched_at < 344 * 4)
-    return std::string(PARAM_DEFS[s->touched].name) + "   " + value_text(s, s->touched);
+    return std::string(PARAM_DEFS[s->touched].kind == PK_KNOB ? knob_name(s, s->touched) : PARAM_DEFS[s->touched].name) + "   " + value_text(s, s->touched);
   return "EVIL TUNER XXL";
 }
 
@@ -582,10 +725,13 @@ std::string readout(const Inst* s) {
 std::string serialize(const Inst* s) {
   std::string o = "evil-tuner-xxl 1\n";
   char b[256];
-  for (int i = 0; i < NUM_KNOBS; ++i) { snprintf(b, sizeof b, "k %s %.6f\n", PARAM_DEFS[i].key, s->v[i]); o += b; }
+  for (int i = 0; i < P_COUNT; ++i)
+    if (PARAM_DEFS[i].kind == PK_KNOB) { snprintf(b, sizeof b, "k %s %.6f\n", PARAM_DEFS[i].key, s->v[i]); o += b; }
   snprintf(b, sizeof b, "t %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n", s->freeze, s->keys_mode, s->char_on,
            s->sat_on, s->lim_on, s->char_pre, s->dly_on, s->verb_on, s->gate_on, s->duck_on, s->lsync[0], s->lsync[1], s->lsync[2],
            s->radio_sync, s->filt_mode, s->osc_wave, s->dly.tape, s->dly.sync, s->gate.steps, s->want_src);
+  o += b;
+  snprintf(b, sizeof b, "u %d %d %d\n", s->send, s->rec_out, s->auto_save);
   o += b;
   auto clean = [](std::string x) { for (auto& c : x) if (c == '\n' || c == '\t') c = ' '; return x; };
   if (s->cur_valid)
@@ -606,8 +752,8 @@ void deserialize(Inst* s, const char* text) {
       char key[64];
       float val;
       if (sscanf(line.c_str() + 2, "%63s %f", key, &val) == 2)
-        for (int i = 0; i < NUM_KNOBS; ++i)
-          if (!strcmp(PARAM_DEFS[i].key, key)) {
+        for (int i = 0; i < P_COUNT; ++i)
+          if (PARAM_DEFS[i].kind == PK_KNOB && !strcmp(PARAM_DEFS[i].key, key)) {
             if (PARAM_DEFS[i].nopts) val = clampf(roundf(val), 0, PARAM_DEFS[i].nopts - 1);
             else val = clampf(val, 0, 1);
             s->v[i] = val;
@@ -625,6 +771,9 @@ void deserialize(Inst* s, const char* text) {
         int src = t[19];
         if (src == SRC_PHONE || src == SRC_AIRPLAY) s->want_src = src;   // a receiver waits again; radio doesn't autoplay
       }
+    } else if (line.compare(0, 2, "u ") == 0) {
+      int a = 0, b2 = 0, c = 0;
+      if (sscanf(line.c_str() + 2, "%d %d %d", &a, &b2, &c) == 3) { s->send = a; s->rec_out = b2; s->auto_save = c; }
     } else if (line.compare(0, 2, "s\t") == 0) {
       std::vector<std::string> c;
       size_t a = 2;
@@ -694,7 +843,7 @@ void read_source(Inst* s, float* l, float* r, int n) {
 }
 
 void update_mods(Inst* s, int n) {
-  for (int i = 0; i < NUM_KNOBS; ++i) s->mod[i] = 0.f;
+  for (int i = 0; i < P_COUNT; ++i) s->mod[i] = 0.f;
   static const int kRate[3] = {P_L1_RATE, P_L2_RATE, P_L3_RATE};
   for (int l = 0; l < 3; ++l) {
     int base = kRate[l];
@@ -715,8 +864,87 @@ void update_mods(Inst* s, int n) {
   }
   int fd = DEST_PARAM[opt(s, P_FOL_DEST)];
   if (fd >= 0 && s->v[P_FOL_AMT] > 0.f) s->mod[fd] += s->v[P_FOL_AMT] * clampf(s->fol.env * 2.f, 0.f, 1.f);
-  for (int i = 0; i < NUM_KNOBS; ++i)
-    s->eff[i] = PARAM_DEFS[i].nopts ? s->v[i] : clampf(s->v[i] + s->mod[i], 0.f, 1.f);
+  for (int i = 0; i < P_COUNT; ++i)
+    if (PARAM_DEFS[i].kind == PK_KNOB) s->eff[i] = PARAM_DEFS[i].nopts ? s->v[i] : clampf(s->v[i] + s->mod[i], 0.f, 1.f);
+}
+
+// ------------------------------------------------------------------------------------------------ CLOUDS
+// Mutable Instruments Clouds with the Parasites firmware (Emilie Gillet, Matthias Puech; MIT), as RMXXXL runs it on the
+// Force: 32-frame sub-blocks at 44.1 kHz, Prepare() on its own thread. Fully wet here; GRAIN MIX mixes it.
+const size_t kClLarge = 118784;               // Clouds' block_mem
+const size_t kClSmall = 65536 - 128;          // Clouds' block_ccm
+const float kClMaxKnob = 65535.0f / 65536.0f; // Clouds' pots never reach 1.0
+const int kClReconfigure = 689;               // a mode change at most every 0.5 s (in 32-frame sub-blocks)
+
+inline short to_short(float x) {
+  x = x > 1.f ? 1.f : (x < -1.f ? -1.f : x);
+  return (short)lrintf(x * 32767.f);
+}
+void* clouds_prepare_loop(void* arg) {
+  Inst* s = static_cast<Inst*>(arg);
+  while (!s->cl_quit) {
+    pthread_mutex_lock(&s->cl_mu);
+    timespec until;
+    clock_gettime(CLOCK_REALTIME, &until);
+    until.tv_nsec += 3000000;
+    if (until.tv_nsec >= 1000000000) { until.tv_sec += 1; until.tv_nsec -= 1000000000; }
+    pthread_cond_timedwait(&s->cl_wake, &s->cl_mu, &until);
+    pthread_mutex_unlock(&s->cl_mu);
+    for (int i = 0; i < 4 && !s->cl_quit; ++i) s->cl->Prepare();
+  }
+  return nullptr;
+}
+
+// the wet signal of Clouds for this block into wl / wr. sync_beats > 0: a grain on each step (GRAIN SYNC); kenv: the
+// keys' envelope (1 without KEYS).
+void clouds_block(Inst* s, const float* L, const float* R, float* wl, float* wr, int n, int scale, double sync_beats,
+                  double beat0, double bpf, float kenv) {
+  clouds::GranularProcessor& g = *s->cl;
+  int mode = std::max(0, std::min(5, opt(s, P_CL_MODE)));
+  clouds::Parameters* p = g.mutable_parameters();
+  int semis = pitch_semis(E(s, P_PITCH), scale) + (s->keys_mode && s->last_note >= 0 ? s->last_note - 60 : 0);
+  p->position = clampf(E(s, P_POS), 0.f, kClMaxKnob);
+  p->size = clampf(E(s, P_SIZE), 0.f, kClMaxKnob);
+  p->pitch = clampf((float)semis, -48.f, 48.f);
+  bool synced = sync_beats > 0.0 && s->cl_mode_applied == 0;
+  p->density = synced ? 0.5f : clampf(E(s, P_GRAINS), 0.f, kClMaxKnob);   // synced: no free grains, a trigger per step
+  p->texture = clampf(E(s, P_SHAPE), 0.f, kClMaxKnob);
+  p->dry_wet = kClMaxKnob;
+  p->stereo_spread = clampf(E(s, P_SPREAD), 0.f, kClMaxKnob);
+  p->feedback = clampf(E(s, P_CLOUD), 0.f, kClMaxKnob);
+  p->reverb = clampf(E(s, P_DETUNE), 0.f, kClMaxKnob);
+  p->freeze = s->grains.frozen;
+  p->granular.reverse = false;
+  // makeup: undo Clouds' output halving and its wet gain; per mode, a dense mode is brought down, a sparse one up
+  static const float kTrim[6] = {1.6f, 1.2f, 1.3f, 0.8f, 0.6f, 0.64f};
+  short in[2 * 32];
+  short out[2 * 32];
+  for (int o = 0; o < n; o += 32) {
+    int m = std::min(32, n - o);
+    if (s->cl_reconf < kClReconfigure) ++s->cl_reconf;
+    if (mode != s->cl_mode_applied && s->cl_reconf >= kClReconfigure) { s->cl_mode_applied = mode; s->cl_reconf = 0; }
+    g.set_playback_mode(clouds::PlaybackMode(s->cl_mode_applied));
+    g.set_quality(0);
+    bool trig = s->cl_trigger;
+    s->cl_trigger = false;
+    if (synced) {   // a step of the grid inside this sub-block
+      double b0 = beat0 + bpf * o, b1 = b0 + bpf * m;
+      if (floor(b1 / sync_beats - 1e-9) > floor(b0 / sync_beats - 1e-9)) trig = trig || s->grains.rng.uni() <= 0.15f + 0.85f * E(s, P_GRAINS);
+    }
+    p->trigger = trig;
+    p->gate = trig;
+    clouds::ShortFrame* fi = reinterpret_cast<clouds::ShortFrame*>(in);
+    clouds::ShortFrame* fo = reinterpret_cast<clouds::ShortFrame*>(out);
+    for (int i = 0; i < m; ++i) { fi[i].l = to_short(L[o + i] * 0.8f); fi[i].r = to_short(R[o + i] * 0.8f); }
+    g.Process(fi, fo, m);
+    if (!s->cl_thread_on) g.Prepare();
+    float k = 2.357f * kTrim[s->cl_mode_applied] / 0.8f / 32768.f;
+    for (int i = 0; i < m; ++i) {
+      wl[o + i] = fo[i].l * k * kenv;
+      wr[o + i] = fo[i].r * k * kenv;
+    }
+  }
+  if (s->cl_thread_on) pthread_cond_signal(&s->cl_wake);
 }
 
 void push_reverb(Inst* s, int type) {
@@ -729,7 +957,7 @@ void push_reverb(Inst* s, int type) {
 }
 
 void render_block(Inst* s, float* L, float* R, int n) {
-  float in[2][kBlock], wet[2][kBlock], tmp[2][kBlock];
+  float in[2][kBlock], wet[2][kBlock];
   // ---- the source, at INPUT LEVEL
   read_source(s, in[0], in[1], n);
   float ig = (s->v[P_IN_LVL] / 0.7f) * (s->v[P_IN_LVL] / 0.7f);
@@ -741,54 +969,89 @@ void render_block(Inst* s, float* L, float* R, int n) {
   s->fol.run(in[0], in[1], n, s->v[P_FOL_SPD]);
   update_mods(s, n);
   s->tape.write(in[0], in[1], n);
-  // ---- the looper: LIVE/LOOP crossfades the live source with the loop
-  s->looper.process(in[0], in[1], tmp[0], tmp[1], n, E(s, P_LOOP_SPEED), E(s, P_LOOP_START), s->v[P_OD_FB]);
+  // ---- the looper. REC IN records / overdubs the source; REC OUT the plugin's output (below). SEND: the loop goes into
+  // the chain (PET, filter, FX, SPACE, GATE); off, it plays clean at the end. LIVE/LOOP fades the live source out.
+  float lp[2][kBlock];
+  bool rec_in = !s->rec_out;
+  s->looper.process(in[0], in[1], lp[0], lp[1], n, E(s, P_LOOP_SPEED), E(s, P_LOOP_START), s->v[P_OD_FB], rec_in);
+  s->looper.update_writing();
   float tm = s->v[P_TAPE_MIX], ll = s->v[P_LOOP_LVL];
+  float send_g = s->send ? ll : 0.f;
   for (int i = 0; i < n; ++i) {
-    L[i] = in[0][i] * (1.f - tm) + tmp[0][i] * ll;
-    R[i] = in[1][i] * (1.f - tm) + tmp[1][i] * ll;
+    L[i] = in[0][i] * (1.f - tm) + lp[0][i] * send_g;
+    R[i] = in[1][i] * (1.f - tm) + lp[1][i] * send_g;
   }
   // ---- the character stage (before the grains, when CHAR PRE)
   int cm = opt(s, P_CHAR_MODE);
   s->chr.setTarget(s->char_on ? cm : 0, s->v[P_CHAR_MIX], E(s, P_CHAR_INT));
   if (s->char_pre && s->char_on && cm) for (int i = 0; i < n; ++i) s->chr.process(L[i], R[i]);
-  // ---- the grains
-  for (int i = 0; i < n; ++i) s->grains.write(L[i], R[i]);
+  // ---- the keys' voices: their envelopes (both engines) and the oscillator layer
+  int scale = opt(s, P_SCALE);
   GrainParams gp{E(s, P_POS), E(s, P_SIZE), E(s, P_PITCH), E(s, P_GRAINS), E(s, P_SPREAD), E(s, P_CLOUD), E(s, P_DETUNE), E(s, P_SHAPE)};
-  float dg = Grains::density_gain(gp), mix = E(s, P_MIX);
+  gp.scale = scale;
+  float mix = E(s, P_MIX);
   memset(wet, 0, sizeof wet);
   float envmax = 0.f;
   float a = onepole(expmap(s->v[P_ATK], 1.f, 4000.f)), d = onepole(expmap(s->v[P_DEC], 5.f, 4000.f));
   float su = s->v[P_SUS], rl = onepole(expmap(s->v[P_REL], 5.f, 8000.f));
   float osc_lvl = s->v[P_OSC_LVL] * 0.3f;
-  float pst = (gp.pitch - 0.5f) * 48.f;
-  if (fabsf(gp.pitch - 0.5f) < 0.012f) pst = 0;
+  float pst = (float)pitch_semis(gp.pitch, scale);
+  float venv0[kVoices];
   if (s->keys_mode) {
     for (int k = 0; k < kVoices; ++k) {
       Voice& vc = s->voice[k];
+      venv0[k] = vc.env.v;
       if (vc.env.st == Adsr::IDLE) continue;
-      float e0 = vc.env.v;
-      if (mix > 0.001f && e0 > 0.002f) s->grains.schedule(k, gp, (float)(vc.note - 60), vc.vel * e0 * dg, n);
       float hz = 440.f * powf(2.f, (vc.note - 69 + pst) / 12.f);
       for (int i = 0; i < n; ++i) {
         float e = vc.env.run(a, d, su, rl);
         if (osc_lvl > 0.f) {
           float y = vc.osc.tick(s->osc_wave, hz) * e * vc.vel * osc_lvl;
-          tmp[0][i] = y;
+          wet[0][i] += y;
+          wet[1][i] += y;
         }
       }
-      if (osc_lvl > 0.f) for (int i = 0; i < n; ++i) { wet[0][i] += tmp[0][i]; wet[1][i] += tmp[0][i]; }
-      envmax = fmaxf(envmax, vc.env.v);
+      envmax = fmaxf(envmax, vc.env.v * vc.vel);
     }
-  } else if (mix > 0.001f) {
-    s->grains.schedule(kVoices, gp, 0.f, dg, n);
   }
-  float gw[2][kBlock];
+  // ---- the grain engines: XXL GRAINS and CLOUDS (a short crossfade when the engine changes)
+  int engine = opt(s, P_ENGINE);
+  float step = 1.f / 441.f;
+  float gw[2][kBlock], cw[2][kBlock];
   memset(gw, 0, sizeof gw);
-  s->grains.render(gw[0], gw[1], n, gp.shape);
+  memset(cw, 0, sizeof cw);
+  bool run_xxl = engine == 0 || s->cl_mix < 1.f;
+  bool run_cl = (engine == 1 || s->cl_mix > 0.f) && s->cl;
+  int sync = opt(s, P_GRAIN_SYNC);
+  static const double kSyncBeats[7] = {0, 1.0, 0.5, 0.25, 0.125, 1.0 / 3.0, 1.0 / 6.0};
+  double beat0 = s->host_pos && s->tempo.playing ? s->tempo.ppq : s->own_beats;
+  double bpf = s->tempo.beat_per_frame();
+  for (int i = 0; i < n; ++i) s->grains.write(L[i], R[i]);
+  if (run_xxl) {
+    float dg = Grains::density_gain(gp);
+    if (s->keys_mode) {
+      for (int k = 0; k < kVoices; ++k) {
+        Voice& vc = s->voice[k];
+        float e0 = venv0[k];
+        if (vc.env.st == Adsr::IDLE || mix <= 0.001f || e0 <= 0.002f) continue;
+        if (sync) s->grains.schedule_sync(gp, (float)(vc.note - 60), vc.vel * e0 * dg, beat0, bpf, kSyncBeats[sync], n);
+        else s->grains.schedule(k, gp, (float)(vc.note - 60), vc.vel * e0 * dg, n);
+      }
+    } else if (mix > 0.001f) {
+      if (sync) s->grains.schedule_sync(gp, 0.f, dg, beat0, bpf, kSyncBeats[sync], n);
+      else s->grains.schedule(kVoices, gp, 0.f, dg, n);
+    }
+    s->grains.render(gw[0], gw[1], n, gp.shape);
+  }
+  if (run_cl) clouds_block(s, L, R, cw[0], cw[1], n, scale, sync ? kSyncBeats[sync] : 0.0, beat0, bpf,
+                           s->keys_mode ? envmax : 1.f);
   for (int i = 0; i < n; ++i) {
-    L[i] = L[i] * (1.f - mix) + gw[0][i] * mix + wet[0][i];
-    R[i] = R[i] * (1.f - mix) + gw[1][i] * mix + wet[1][i];
+    s->cl_mix += engine == 1 ? step : -step;
+    s->cl_mix = clampf(s->cl_mix, 0.f, 1.f);
+    float f = s->cl_mix;
+    float wl = gw[0][i] * (1.f - f) + cw[0][i] * f, wr = gw[1][i] * (1.f - f) + cw[1][i] * f;
+    L[i] = L[i] * (1.f - mix) + wl * mix + wet[0][i];
+    R[i] = R[i] * (1.f - mix) + wr * mix + wet[1][i];
   }
   // ---- the filter (FILTER ENV: the keys' envelope, else the source's level)
   float fe = (s->v[P_FLT_ENV] - 0.5f) * 2.f, env = s->keys_mode ? envmax : clampf(s->fol.env * 2.f, 0.f, 1.f);
@@ -837,8 +1100,13 @@ void render_block(Inst* s, float* L, float* R, int n) {
       R[i] = R[i] * (1.f - vm) + vout[1][i] * vm * 1.6f;
     }
   }
-  // ---- limiter, volume
+  // ---- the loop, clean (SEND off), then the limiter
+  if (!s->send && ll > 0.f)
+    for (int i = 0; i < n; ++i) { L[i] += lp[0][i] * ll; R[i] += lp[1][i] * ll; }
   if (s->lim_on) s->lim.process(L, R, n, s->v[P_LIM_DRIVE] * 18.f, -12.f + 11.7f * s->v[P_LIM_CEIL]);
+  // ---- REC OUT: what is heard (before VOLUME) goes into the loop, where the play head was when it was made
+  if (s->rec_out && (s->looper.rec || s->looper.od)) s->looper.write_out(L, R, n, s->lim_on ? Limiter::kLook : 0);
+  s->looper.update_writing();
   float vg = (E(s, P_VOLUME) / 0.75f) * (E(s, P_VOLUME) / 0.75f);
   for (int i = 0; i < n; ++i) {
     s->vol_sm += 0.002f * (vg - s->vol_sm);
@@ -909,7 +1177,17 @@ void* create(const char* dataDir) {
     if (writable_dir(d.c_str())) s->data_dir = d;
   }
   s->tape.init();
-  s->looper.init();
+  if (!s->looper.init() || !s->tape.buf) { s->looper.free_all(); s->tape.free_all(); delete s; return nullptr; }
+  {   // SAVE's folder: the device's documents folder, which MPC's own browser shows
+    struct stat st;
+    if (stat("/sdcard/Force Documents", &st) == 0) s->rec_dir = "/sdcard/Force Documents/Evil Tuner XXL Recordings";
+    else if (stat("/sdcard/MPC Documents", &st) == 0) s->rec_dir = "/sdcard/MPC Documents/Evil Tuner XXL Recordings";
+    else if (!s->data_dir.empty()) s->rec_dir = s->data_dir + "/Recordings";
+    else s->rec_dir = "/tmp/Evil Tuner XXL Recordings";
+#ifdef ET_TEST
+    if (getenv("ET_REC_DIR")) s->rec_dir = getenv("ET_REC_DIR");
+#endif
+  }
   s->grains.init();
   s->filt.init();
   s->sat.init();
@@ -935,9 +1213,25 @@ void* create(const char* dataDir) {
     s->rv_sent[k][0] = -1.f;
   }
   s->gate.rng.s = 0x51ED27u;
+  // Clouds: zeroed memory (Init() leaves members unset), its buffers, Prepare() on a thread of its own
+  s->cl_large = static_cast<uint8_t*>(calloc(1, kClLarge));
+  s->cl_small = static_cast<uint8_t*>(calloc(1, kClSmall));
+  void* clm = calloc(1, sizeof(clouds::GranularProcessor));
+  if (clm && s->cl_large && s->cl_small) {
+    s->cl = new (clm) clouds::GranularProcessor;
+    s->cl->Init(s->cl_large, kClLarge, s->cl_small, kClSmall);
+    memset(s->cl->mutable_parameters(), 0, sizeof(clouds::Parameters));
+    s->cl->set_playback_mode(clouds::PLAYBACK_MODE_GRANULAR);
+    s->cl->set_quality(0);
+    s->cl->Prepare();
+    s->cl_reconf = kClReconfigure;
+    pthread_mutex_init(&s->cl_mu, nullptr);
+    pthread_cond_init(&s->cl_wake, nullptr);
+    s->cl_thread_on = pthread_create(&s->cl_thread, nullptr, clouds_prepare_loop, s) == 0;
+  } else free(clm);
   s->src.start(s->plugin_dir, s->data_dir);
   s->dir.start(s->data_dir);
-  s->stretcher.start();
+  s->work.start();
   request_list(s, false);   // the most played stations, to start with
   return s;
 }
@@ -946,7 +1240,19 @@ void destroy(void* p) {
   Inst* s = static_cast<Inst*>(p);
   s->src.stop_all();
   s->dir.stop();
-  s->stretcher.stop();
+  s->work.stop();
+  if (s->cl_thread_on) {
+    s->cl_quit = true;
+    pthread_cond_signal(&s->cl_wake);
+    pthread_join(s->cl_thread, nullptr);
+    pthread_cond_destroy(&s->cl_wake);
+    pthread_mutex_destroy(&s->cl_mu);
+  }
+  if (s->cl) { s->cl->~GranularProcessor(); free(s->cl); }
+  free(s->cl_large);
+  free(s->cl_small);
+  s->tape.free_all();
+  s->looper.free_all();
   if (s->rv[0]) kPlateReverb.destroy(s->rv[0]);
   if (s->rv[1]) kRoomReverb.destroy(s->rv[1]);
   delete s;
@@ -975,6 +1281,8 @@ void midi(void* p, const uint8_t* m, int len) {
       vc.vel = vel / 127.f;
       vc.age = ++s->voice_clock;
       vc.env.gate(true);
+      s->last_note = note;                // CLOUDS plays the last note pressed
+      s->cl_trigger = true;
       s->grains.sched[k] = 0;
     } else {
       for (auto& vc : s->voice) if (vc.note == note && vc.env.st != Adsr::IDLE && vc.env.st != Adsr::R) vc.env.gate(false);
@@ -1051,11 +1359,18 @@ int get_param(void* p, const char* k, char* buf, int n) {
   }
   if (!strcmp(k, "display_rev")) { snprintf(t, sizeof t, "%u", (unsigned)s->display_rev); return put(buf, n, t); }
   size_t kl = strlen(k);
+  if (kl > 5 && !strcmp(k + kl - 5, "_name")) {
+    std::string base(k, kl - 5);
+    int on;
+    int i = key_index(base.c_str(), &on);
+    if (i < 0 || PARAM_DEFS[i].kind != PK_KNOB) return 0;
+    return put(buf, n, knob_name(s, i));
+  }
   if (kl > 8 && !strcmp(k + kl - 8, "_display")) {
     std::string base(k, kl - 8);
     int on;
     int i = key_index(base.c_str(), &on);
-    if (i < 0 || i >= NUM_KNOBS) return 0;
+    if (i < 0 || PARAM_DEFS[i].kind != PK_KNOB) return 0;
     return put(buf, n, value_text(s, i));
   }
   int on;
@@ -1136,12 +1451,29 @@ void render(void* p, int16_t* out, int frames) {
     }
   }
   if (s->browse_countdown > 0 && --s->browse_countdown == 0) { if (s->list_mode == LIST_FAVS) s->list_mode = LIST_BROWSE; if (s->list_mode == LIST_SEARCH) s->list_mode = LIST_BROWSE; request_list(s, false); }
-  if (s->stretch_busy) {
-    StretchJob j;
-    if (s->stretcher.take(j)) {
-      s->looper.set(j.L.data(), j.R.data(), (int)j.L.size());
+  // ---- the tape worker: a new loop to swap in, a message, jobs that were waiting
+  {
+    Looper& L = s->looper;
+    int sl = s->work.swap_len.load();
+    if (sl >= 0 && !L.rec && !L.od) {
+      L.cp_left = 0;
+      L.swap_in(sl, true);
+      L.update_writing();
+      s->work.swap_len.store(-1);
       s->stretch_busy = false;
-      flash(s, "STRETCH DONE (UNDO TO GO BACK)");
+    }
+    std::string m;
+    if (s->work.take_msg(m)) flash(s, m);
+    if (s->stretch_busy && s->work.running.load() == TapeWorker::NONE && s->work.swap_len.load() < 0 && !s->work.busy.load())
+      s->stretch_busy = false;
+    if (s->pending_capture && try_capture(s)) { s->pending_capture = false; flash(s, "CAPTURING..."); }
+    if (s->pending_save && try_save(s)) { s->pending_save = false; flash(s, "SAVING..."); }
+    if (s->pending_rec && !s->work.busy.load() && s->work.swap_len.load() < 0) rec_press(s);
+    // a recording that closed by itself (its LOOP LENGTH reached, or 3 minutes): AUTO SAVE saves it
+    if (s->layer_open && !L.rec && !L.od) {
+      s->layer_open = false;
+      if (s->auto_save) request_save(s);
+      s->display_rev++;
     }
   }
   if ((s->want_src == SRC_PHONE || s->want_src == SRC_AIRPLAY) && (s->clock - s->ip_check) > 344 * 5) {   // the address may change

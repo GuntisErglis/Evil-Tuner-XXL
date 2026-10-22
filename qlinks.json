@@ -1,0 +1,636 @@
+{
+ "plugin": "Evil Tuner XXL",
+ "format": "qlink-map 1",
+ "pages": {
+  "radio": {
+   "name": "RADIO",
+   "knobs": [
+    {
+     "n": 1,
+     "qlinkPage": 1,
+     "knob": 1,
+     "key": "genre",
+     "name": "GENRE"
+    },
+    {
+     "n": 2,
+     "qlinkPage": 1,
+     "knob": 2,
+     "key": "country",
+     "name": "COUNTRY"
+    },
+    {
+     "n": 3,
+     "qlinkPage": 1,
+     "knob": 3,
+     "key": "sort",
+     "name": "SORT"
+    },
+    {
+     "n": 4,
+     "qlinkPage": 1,
+     "knob": 4,
+     "key": "kbps",
+     "name": "MAX KBPS"
+    },
+    {
+     "n": 5,
+     "qlinkPage": 1,
+     "knob": 5,
+     "key": "in_lvl",
+     "name": "INPUT LEVEL"
+    }
+   ]
+  },
+  "pet": {
+   "name": "PET",
+   "knobs": [
+    {
+     "n": 1,
+     "qlinkPage": 1,
+     "knob": 1,
+     "key": "engine",
+     "name": "ENGINE"
+    },
+    {
+     "n": 2,
+     "qlinkPage": 1,
+     "knob": 2,
+     "key": "cl_mode",
+     "name": "CLOUDS MODE"
+    },
+    {
+     "n": 3,
+     "qlinkPage": 1,
+     "knob": 3,
+     "key": "pos",
+     "name": "POSITION"
+    },
+    {
+     "n": 4,
+     "qlinkPage": 1,
+     "knob": 4,
+     "key": "size",
+     "name": "SIZE"
+    },
+    {
+     "n": 5,
+     "qlinkPage": 1,
+     "knob": 5,
+     "key": "pitch",
+     "name": "PITCH"
+    },
+    {
+     "n": 6,
+     "qlinkPage": 1,
+     "knob": 6,
+     "key": "scale",
+     "name": "SCALE"
+    },
+    {
+     "n": 7,
+     "qlinkPage": 1,
+     "knob": 7,
+     "key": "grains",
+     "name": "GRAINS"
+    },
+    {
+     "n": 8,
+     "qlinkPage": 1,
+     "knob": 8,
+     "key": "grain_sync",
+     "name": "GRAIN SYNC"
+    },
+    {
+     "n": 9,
+     "qlinkPage": 2,
+     "knob": 1,
+     "key": "spread",
+     "name": "SPREAD"
+    },
+    {
+     "n": 10,
+     "qlinkPage": 2,
+     "knob": 2,
+     "key": "cloud",
+     "name": "CLOUD"
+    },
+    {
+     "n": 11,
+     "qlinkPage": 2,
+     "knob": 3,
+     "key": "detune",
+     "name": "DETUNE"
+    },
+    {
+     "n": 12,
+     "qlinkPage": 2,
+     "knob": 4,
+     "key": "shape",
+     "name": "SHAPE"
+    },
+    {
+     "n": 13,
+     "qlinkPage": 2,
+     "knob": 5,
+     "key": "cutoff",
+     "name": "CUTOFF"
+    },
+    {
+     "n": 14,
+     "qlinkPage": 2,
+     "knob": 6,
+     "key": "reso",
+     "name": "RESONANCE"
+    },
+    {
+     "n": 15,
+     "qlinkPage": 2,
+     "knob": 7,
+     "key": "mix",
+     "name": "GRAIN MIX"
+    },
+    {
+     "n": 16,
+     "qlinkPage": 2,
+     "knob": 8,
+     "key": "volume",
+     "name": "VOLUME"
+    },
+    {
+     "n": 17,
+     "qlinkPage": 3,
+     "knob": 1,
+     "key": "flt_env",
+     "name": "FILTER ENV"
+    },
+    {
+     "n": 18,
+     "qlinkPage": 3,
+     "knob": 2,
+     "key": "osc_lvl",
+     "name": "OSC LEVEL"
+    },
+    {
+     "n": 19,
+     "qlinkPage": 3,
+     "knob": 3,
+     "key": null,
+     "name": null
+    },
+    {
+     "n": 20,
+     "qlinkPage": 3,
+     "knob": 4,
+     "key": null,
+     "name": null
+    },
+    {
+     "n": 21,
+     "qlinkPage": 3,
+     "knob": 5,
+     "key": null,
+     "name": null
+    },
+    {
+     "n": 22,
+     "qlinkPage": 3,
+     "knob": 6,
+     "key": null,
+     "name": null
+    },
+    {
+     "n": 23,
+     "qlinkPage": 3,
+     "knob": 7,
+     "key": null,
+     "name": null
+    },
+    {
+     "n": 24,
+     "qlinkPage": 3,
+     "knob": 8,
+     "key": null,
+     "name": null
+    }
+   ]
+  },
+  "fx": {
+   "name": "FX",
+   "knobs": [
+    {
+     "n": 1,
+     "qlinkPage": 1,
+     "knob": 1,
+     "key": "char_mode",
+     "name": "CHARACTER"
+    },
+    {
+     "n": 2,
+     "qlinkPage": 1,
+     "knob": 2,
+     "key": "char_int",
+     "name": "INTENSITY"
+    },
+    {
+     "n": 3,
+     "qlinkPage": 1,
+     "knob": 3,
+     "key": "char_mix",
+     "name": "CHAR MIX"
+    },
+    {
+     "n": 4,
+     "qlinkPage": 1,
+     "knob": 4,
+     "key": "sat_type",
+     "name": "SATURATOR"
+    },
+    {
+     "n": 5,
+     "qlinkPage": 1,
+     "knob": 5,
+     "key": "sat_amt",
+     "name": "SAT AMOUNT"
+    },
+    {
+     "n": 6,
+     "qlinkPage": 1,
+     "knob": 6,
+     "key": "sat_mix",
+     "name": "SAT MIX"
+    },
+    {
+     "n": 7,
+     "qlinkPage": 1,
+     "knob": 7,
+     "key": "lim_drive",
+     "name": "LIMIT DRIVE"
+    },
+    {
+     "n": 8,
+     "qlinkPage": 1,
+     "knob": 8,
+     "key": "lim_ceil",
+     "name": "CEILING"
+    }
+   ]
+  },
+  "space": {
+   "name": "SPACE",
+   "knobs": [
+    {
+     "n": 1,
+     "qlinkPage": 1,
+     "knob": 1,
+     "key": "dly_time",
+     "name": "DELAY TIME"
+    },
+    {
+     "n": 2,
+     "qlinkPage": 1,
+     "knob": 2,
+     "key": "dly_in",
+     "name": "DELAY IN LVL"
+    },
+    {
+     "n": 3,
+     "qlinkPage": 1,
+     "knob": 3,
+     "key": "dly_fb",
+     "name": "FEEDBACK"
+    },
+    {
+     "n": 4,
+     "qlinkPage": 1,
+     "knob": 4,
+     "key": "dly_wet",
+     "name": "DRY/WET"
+    },
+    {
+     "n": 5,
+     "qlinkPage": 1,
+     "knob": 5,
+     "key": "verb_type",
+     "name": "REVERB"
+    },
+    {
+     "n": 6,
+     "qlinkPage": 1,
+     "knob": 6,
+     "key": "verb_size",
+     "name": "DECAY"
+    },
+    {
+     "n": 7,
+     "qlinkPage": 1,
+     "knob": 7,
+     "key": "verb_shim",
+     "name": "SHIMMER"
+    },
+    {
+     "n": 8,
+     "qlinkPage": 1,
+     "knob": 8,
+     "key": "verb_mix",
+     "name": "VERB MIX"
+    }
+   ]
+  },
+  "gate": {
+   "name": "GATE",
+   "knobs": [
+    {
+     "n": 1,
+     "qlinkPage": 1,
+     "knob": 1,
+     "key": "gate_rate",
+     "name": "GATE RATE"
+    },
+    {
+     "n": 2,
+     "qlinkPage": 1,
+     "knob": 2,
+     "key": "gate_depth",
+     "name": "GATE DEPTH"
+    },
+    {
+     "n": 3,
+     "qlinkPage": 1,
+     "knob": 3,
+     "key": "gate_atk",
+     "name": "GATE ATTACK"
+    },
+    {
+     "n": 4,
+     "qlinkPage": 1,
+     "knob": 4,
+     "key": "gate_rel",
+     "name": "GATE RELEASE"
+    },
+    {
+     "n": 5,
+     "qlinkPage": 1,
+     "knob": 5,
+     "key": "gate_swing",
+     "name": "SWING"
+    },
+    {
+     "n": 6,
+     "qlinkPage": 1,
+     "knob": 6,
+     "key": "gate_pat",
+     "name": "PATTERN"
+    },
+    {
+     "n": 7,
+     "qlinkPage": 1,
+     "knob": 7,
+     "key": "stut_len",
+     "name": "STUTTER LEN"
+    },
+    {
+     "n": 8,
+     "qlinkPage": 1,
+     "knob": 8,
+     "key": "duck_depth",
+     "name": "DUCK DEPTH"
+    }
+   ]
+  },
+  "tape": {
+   "name": "TAPE",
+   "knobs": [
+    {
+     "n": 1,
+     "qlinkPage": 1,
+     "knob": 1,
+     "key": "loop_len",
+     "name": "LOOP LENGTH"
+    },
+    {
+     "n": 2,
+     "qlinkPage": 1,
+     "knob": 2,
+     "key": "loop_start",
+     "name": "LOOP START"
+    },
+    {
+     "n": 3,
+     "qlinkPage": 1,
+     "knob": 3,
+     "key": "loop_speed",
+     "name": "LOOP SPEED"
+    },
+    {
+     "n": 4,
+     "qlinkPage": 1,
+     "knob": 4,
+     "key": "loop_lvl",
+     "name": "LOOP LEVEL"
+    },
+    {
+     "n": 5,
+     "qlinkPage": 1,
+     "knob": 5,
+     "key": "od_fb",
+     "name": "OVERDUB FB"
+    },
+    {
+     "n": 6,
+     "qlinkPage": 1,
+     "knob": 6,
+     "key": "tape_mix",
+     "name": "LIVE/LOOP"
+    },
+    {
+     "n": 7,
+     "qlinkPage": 1,
+     "knob": 7,
+     "key": "stretch",
+     "name": "STRETCH"
+    },
+    {
+     "n": 8,
+     "qlinkPage": 1,
+     "knob": 8,
+     "key": "stretch_amt",
+     "name": "STRETCH AMT"
+    }
+   ]
+  },
+  "mod": {
+   "name": "MOD",
+   "knobs": [
+    {
+     "n": 1,
+     "qlinkPage": 1,
+     "knob": 1,
+     "key": "l1_rate",
+     "name": "LFO1 RATE"
+    },
+    {
+     "n": 2,
+     "qlinkPage": 1,
+     "knob": 2,
+     "key": "l1_depth",
+     "name": "LFO1 DEPTH"
+    },
+    {
+     "n": 3,
+     "qlinkPage": 1,
+     "knob": 3,
+     "key": "l1_wave",
+     "name": "LFO1 WAVE"
+    },
+    {
+     "n": 4,
+     "qlinkPage": 1,
+     "knob": 4,
+     "key": "l1_dest",
+     "name": "LFO1 DEST"
+    },
+    {
+     "n": 5,
+     "qlinkPage": 1,
+     "knob": 5,
+     "key": "l2_rate",
+     "name": "LFO2 RATE"
+    },
+    {
+     "n": 6,
+     "qlinkPage": 1,
+     "knob": 6,
+     "key": "l2_depth",
+     "name": "LFO2 DEPTH"
+    },
+    {
+     "n": 7,
+     "qlinkPage": 1,
+     "knob": 7,
+     "key": "l2_wave",
+     "name": "LFO2 WAVE"
+    },
+    {
+     "n": 8,
+     "qlinkPage": 1,
+     "knob": 8,
+     "key": "l2_dest",
+     "name": "LFO2 DEST"
+    },
+    {
+     "n": 9,
+     "qlinkPage": 2,
+     "knob": 1,
+     "key": "l3_rate",
+     "name": "LFO3 RATE"
+    },
+    {
+     "n": 10,
+     "qlinkPage": 2,
+     "knob": 2,
+     "key": "l3_depth",
+     "name": "LFO3 DEPTH"
+    },
+    {
+     "n": 11,
+     "qlinkPage": 2,
+     "knob": 3,
+     "key": "l3_wave",
+     "name": "LFO3 WAVE"
+    },
+    {
+     "n": 12,
+     "qlinkPage": 2,
+     "knob": 4,
+     "key": "l3_dest",
+     "name": "LFO3 DEST"
+    },
+    {
+     "n": 13,
+     "qlinkPage": 2,
+     "knob": 5,
+     "key": "fol_amt",
+     "name": "FOLLOW AMT"
+    },
+    {
+     "n": 14,
+     "qlinkPage": 2,
+     "knob": 6,
+     "key": "fol_spd",
+     "name": "FOLLOW SPEED"
+    },
+    {
+     "n": 15,
+     "qlinkPage": 2,
+     "knob": 7,
+     "key": "fol_dest",
+     "name": "FOLLOW DEST"
+    },
+    {
+     "n": 16,
+     "qlinkPage": 2,
+     "knob": 8,
+     "key": null,
+     "name": null
+    },
+    {
+     "n": 17,
+     "qlinkPage": 3,
+     "knob": 1,
+     "key": "atk",
+     "name": "ATTACK"
+    },
+    {
+     "n": 18,
+     "qlinkPage": 3,
+     "knob": 2,
+     "key": "dec",
+     "name": "DECAY"
+    },
+    {
+     "n": 19,
+     "qlinkPage": 3,
+     "knob": 3,
+     "key": "sus",
+     "name": "SUSTAIN"
+    },
+    {
+     "n": 20,
+     "qlinkPage": 3,
+     "knob": 4,
+     "key": "rel",
+     "name": "RELEASE"
+    },
+    {
+     "n": 21,
+     "qlinkPage": 3,
+     "knob": 5,
+     "key": null,
+     "name": null
+    },
+    {
+     "n": 22,
+     "qlinkPage": 3,
+     "knob": 6,
+     "key": null,
+     "name": null
+    },
+    {
+     "n": 23,
+     "qlinkPage": 3,
+     "knob": 7,
+     "key": null,
+     "name": null
+    },
+    {
+     "n": 24,
+     "qlinkPage": 3,
+     "knob": 8,
+     "key": null,
+     "name": null
+    }
+   ]
+  }
+ }
+}

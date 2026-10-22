@@ -639,7 +639,7 @@ void Sources::run_child(int kind, uint32_t g) {
     }
     unlink(meta_pipe.c_str());
     mkfifo(meta_pipe.c_str(), 0644);
-    args = {"shairport-sync", "-c", conf, "-o", "stdout"};
+    args = {"shairport-sync", "-v", "-c", conf, "-o", "stdout"};   // -v: /tmp/eviltuner-airplay.log tells what an Apple device did
   }
   state = 1;
   set_status(kind == SRC_PHONE ? "WAITING FOR THE PHONE" : "WAITING FOR AIRPLAY");

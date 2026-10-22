@@ -30,9 +30,9 @@ for f in $ENGINE_SRCS; do
   $ZIG c++ $TGT $COMMON -std=gnu++17 -Wall -Wno-unused-function $DEFS $INCS -Ibuild -I"$MPC_VST/wrapper" -c "$f" -o "$o"
   OBJS="$OBJS $o"
 done
-for f in $DF_SRCS; do
+for f in $DF_SRCS $CL_SRCS; do
   o="build/arm/$(echo "$f" | tr / _).o"
-  [ "$o" -nt "$f" ] || $ZIG c++ $TGT $COMMON -std=gnu++11 -w $DEFS $INCS -c "$f" -o "$o"
+  [ "$o" -nt "$f" ] || $ZIG c++ $TGT $COMMON -std=gnu++11 -w -Wno-c++11-narrowing -Wno-narrowing $DEFS $INCS -c "$f" -o "$o"
   OBJS="$OBJS $o"
 done
 $ZIG cc $TGT $COMMON -std=gnu11 -w -Ibuild -I"$MPC_VST/wrapper" -c "$MPC_VST/wrapper/vst2_wrap.c" -o build/arm/vst2_wrap.o

@@ -199,9 +199,14 @@ enum {
     P_ROW7 = 195,
     P_ROW8 = 196,
     P_VIEW = 197,
-    P_COUNT = 198
+    P_ENGINE = 198,
+    P_CL_MODE = 199,
+    P_SCALE = 200,
+    P_GRAIN_SYNC = 201,
+    P_SEND = 202,
+    P_REC_OUT = 203,
+    P_SAVE = 204,
+    P_AUTO_SAVE = 205,
+    P_COUNT = 206
 };
-#define NUM_KNOBS 72
-#define FIRST_KEY 72
-#define NUM_KEYS 108
 #define NUM_ROWS 8

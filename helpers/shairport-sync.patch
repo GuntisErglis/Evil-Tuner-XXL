@@ -1,0 +1,244 @@
+--- a/common.c
++++ b/common.c
+@@ -54,6 +54,7 @@
+ 
+ #ifdef COMPILE_FOR_LINUX
+ #include <netpacket/packet.h>
++#include <net/if.h>
+ #endif
+ 
+ #ifdef COMPILE_FOR_BSD
+@@ -967,8 +968,12 @@
+     mbedtls_rsa_set_padding(trsa, MBEDTLS_RSA_PKCS_V15, MBEDTLS_MD_NONE);    
+     outbuf = malloc(trsa->MBEDTLS_PRIVATE_V3_ONLY(len));
+ #if MBEDTLS_VERSION_MAJOR == 3
+-    rc = mbedtls_rsa_pkcs1_encrypt(trsa, mbedtls_ctr_drbg_random, &ctr_drbg,
+-                                   inlen, input, outbuf);
++    // Evil Tuner XXL: mbedTLS 3 dropped the mode argument and mbedtls_rsa_pkcs1_encrypt() is always a PUBLIC-key
++    // encryption, so the Apple-Response came out random and every Apple device refused to connect ("unable to connect"
++    // after listing the receiver). The response is a PRIVATE-key PKCS#1 v1.5 (type 1) operation on the raw
++    // challenge + address + MAC: a v1.5 signature with no digest does exactly that.
++    rc = mbedtls_rsa_rsassa_pkcs1_v15_sign(trsa, mbedtls_ctr_drbg_random, &ctr_drbg, MBEDTLS_MD_NONE,
++                                           (unsigned int)inlen, input, outbuf);
+ #else
+     rc = mbedtls_rsa_pkcs1_encrypt(trsa, mbedtls_ctr_drbg_random, &ctr_drbg, MBEDTLS_RSA_PRIVATE,
+                                    inlen, input, outbuf);
+@@ -2132,6 +2137,31 @@
+   return result;
+ }
+ 
++/* Evil Tuner XXL: the network interface that carries the default route (the Wi-Fi or hotspot an iPhone uses), from
++ * /proc/net/route; "" when there is none. A device can have several interfaces (USB networking, tunnels, a second
++ * radio): the device ID, the Apple-Response and the mDNS addresses must all be the ones of the interface the phone
++ * can reach. */
++int et_default_interface(char *name, size_t len) {
++  name[0] = 0;
++  FILE *f = fopen("/proc/net/route", "r");
++  if (f == NULL)
++    return 0;
++  char line[256];
++  int found = 0;
++  if (fgets(line, sizeof(line), f) != NULL) {
++    while (!found && fgets(line, sizeof(line), f) != NULL) {
++      char ifn[64];
++      unsigned long dest = 1, flags = 0;
++      if (sscanf(line, "%63s %lx %*x %lx", ifn, &dest, &flags) == 3 && dest == 0 && (flags & 1)) {
++        snprintf(name, len, "%s", ifn);
++        found = 1;
++      }
++    }
++  }
++  fclose(f);
++  return found;
++}
++
+ int get_device_id(uint8_t *id, int int_length) {
+ 
+   uint64_t wait_time = 10000000000L; // wait up to this (ns) long to get a MAC address
+@@ -2151,37 +2181,30 @@
+ 
+   int64_t time_to_wait;
+   do {
++    char want[64];
++    et_default_interface(want, sizeof(want));
+     if (getifaddrs(&ifaddr) == 0) {
+-      t = id;
+-      int found = 0;
+-
+-      for (ifa = ifaddr; ((ifa != NULL) && (found == 0)); ifa = ifa->ifa_next) {
++      // Evil Tuner XXL: the default route's interface first, else the first up interface with a real 6-byte MAC
++      // (not a tunnel or a dummy, whose "addresses" are zero or 4 bytes long)
++      for (int pass = 0; pass < 2 && response != 0; pass++) {
++        for (ifa = ifaddr; ((ifa != NULL) && (response != 0)); ifa = ifa->ifa_next) {
+ #ifdef AF_PACKET
+-        if ((ifa->ifa_addr) && (ifa->ifa_addr->sa_family == AF_PACKET)) {
+-          struct sockaddr_ll *s = (struct sockaddr_ll *)ifa->ifa_addr;
+-          if ((strcmp(ifa->ifa_name, "lo") != 0)) {
+-            found = 1;
+-            response = 0;
+-            for (i = 0; ((i < s->sll_halen) && (i < int_length)); i++) {
+-              *t++ = s->sll_addr[i];
+-            }
+-          }
+-        }
+-#else
+-#ifdef AF_LINK
+-        struct sockaddr_dl *sdl = (struct sockaddr_dl *)ifa->ifa_addr;
+-        if ((sdl) && (sdl->sdl_family == AF_LINK)) {
+-          if (sdl->sdl_type == IFT_ETHER) {
+-            found = 1;
+-            response = 0;
+-            uint8_t *s = (uint8_t *)LLADDR(sdl);
+-            for (i = 0; ((i < sdl->sdl_alen) && (i < int_length)); i++) {
+-              *t++ = *s++;
++          if ((ifa->ifa_addr) && (ifa->ifa_addr->sa_family == AF_PACKET) && (ifa->ifa_flags & IFF_UP) &&
++              !(ifa->ifa_flags & IFF_LOOPBACK)) {
++            struct sockaddr_ll *s = (struct sockaddr_ll *)ifa->ifa_addr;
++            int nonzero = 0;
++            for (i = 0; i < s->sll_halen; i++)
++              nonzero |= s->sll_addr[i];
++            if (s->sll_halen == 6 && nonzero && (pass == 1 || (want[0] && strcmp(ifa->ifa_name, want) == 0))) {
++              response = 0;
++              t = id;
++              for (i = 0; ((i < s->sll_halen) && (i < int_length)); i++) {
++                *t++ = s->sll_addr[i];
++              }
+             }
+           }
+-        }
+-#endif
+ #endif
++        }
+       }
+       freeifaddrs(ifaddr);
+     }
+--- a/common.h
++++ b/common.h
+@@ -532,6 +532,7 @@
+ int32_t mod32Difference(uint32_t a, uint32_t b);
+ 
+ int get_device_id(uint8_t *id, int int_length);
++int et_default_interface(char *name, size_t len);
+ 
+ #ifdef CONFIG_USE_GIT_VERSION_STRING
+ extern char git_version_string[];
+--- a/mdns_tinysvcmdns.c
++++ b/mdns_tinysvcmdns.c
+@@ -33,6 +33,7 @@
+ #include <sys/socket.h>
+ #include <sys/types.h>
+ #include <unistd.h>
++#include <arpa/inet.h>
+ 
+ #include "tinysvcmdns.h"
+ 
+@@ -50,77 +51,52 @@
+     return -1;
+   }
+ 
+-  // Thanks to Paul Lietar for this
+-  // room for name + .local + NULL
++  // Evil Tuner XXL: a host name of its own (EvilTunerXXL-<MAC>.local), so it never clashes with the device's own
++  // name; and only the IPv4 addresses of interfaces that are up and running, the default route's interface first.
++  // An iPhone connects to the first address it resolves: an address of an interface it can't reach (USB networking,
++  // a tunnel, an interface that is down) or an IPv6 link-local one made it list the receiver and then fail.
+   char hostname[100 + 6];
+-  gethostname(hostname, 99);
+-  // according to POSIX, this may be truncated without a final NULL !
+-  hostname[99] = 0;
+-
+-  // will not work if the hostname doesn't end in .local
+-  char *hostend = hostname + strlen(hostname);
+-  if ((strlen(hostname) < strlen(".local")) || (strcmp(hostend - 6, ".local") != 0)) {
+-    strcat(hostname, ".local");
+-  }
++  snprintf(hostname, sizeof(hostname), "EvilTunerXXL-%02X%02X%02X.local", (unsigned char)config.hw_addr[3],
++           (unsigned char)config.hw_addr[4], (unsigned char)config.hw_addr[5]);
+ 
+   if (getifaddrs(&ifalist) < 0) {
+     warn("tinysvcmdns: getifaddrs() failed");
+     return -1;
+   }
+ 
+-  ifa = ifalist;
+-
+-  // Look for an ipv4/ipv6 non-loopback interface to use as the main one.
+-  for (ifa = ifalist; ifa != NULL; ifa = ifa->ifa_next) {
+-    // only check for the named interface, if specified
+-    if ((config.interface == NULL) || (strcmp(config.interface, ifa->ifa_name) == 0)) {
+-
+-      if (!(ifa->ifa_flags & IFF_LOOPBACK) && ifa->ifa_addr &&
+-          ifa->ifa_addr->sa_family == AF_INET) {
+-        uint32_t main_ip = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;
+-
+-        mdnsd_set_hostname(svr, hostname, main_ip); // TTL should be 120 seconds
+-        break;
+-      } else if (!(ifa->ifa_flags & IFF_LOOPBACK) && ifa->ifa_addr &&
+-                 ifa->ifa_addr->sa_family == AF_INET6) {
+-        struct in6_addr *addr = &((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr;
+-
+-        mdnsd_set_hostname_v6(svr, hostname, addr); // TTL should be 120 seconds
+-        break;
++  char want[64];
++  et_default_interface(want, sizeof(want));
++  int have_main = 0;
++  for (int pass = 0; pass < 2; pass++) {
++    for (ifa = ifalist; ifa != NULL; ifa = ifa->ifa_next) {
++      if (!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET)
++        continue;
++      if ((ifa->ifa_flags & IFF_LOOPBACK) || !(ifa->ifa_flags & IFF_UP) || !(ifa->ifa_flags & IFF_RUNNING))
++        continue;
++      if ((config.interface != NULL) && (strcmp(config.interface, ifa->ifa_name) != 0))
++        continue;
++      int is_default = want[0] && strcmp(ifa->ifa_name, want) == 0;
++      if ((pass == 0) != is_default)
++        continue;
++      uint32_t ip = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;
++      if (!have_main) {
++        mdnsd_set_hostname(svr, hostname, ip); // TTL should be 120 seconds
++        have_main = 1;
++        inform("tinysvcmdns: %s is %s on %s.", hostname, inet_ntoa(((struct sockaddr_in *)ifa->ifa_addr)->sin_addr),
++               ifa->ifa_name);
++      } else {
++        struct rr_entry *a_e = rr_create_a(create_nlabel(hostname), ip); // TTL should be 120 seconds
++        mdnsd_add_rr(svr, a_e);
+       }
+     }
+   }
++  freeifaddrs(ifalist);
+ 
+-  if (ifa == NULL) {
+-    warn("tinysvcmdns: no non-loopback ipv4 or ipv6 interface found");
++  if (!have_main) {
++    warn("tinysvcmdns: no IPv4 interface that is up was found");
+     return -1;
+   }
+ 
+-  // Skip the first one, it was already added by set_hostname
+-  for (ifa = ifa->ifa_next; ifa != NULL; ifa = ifa->ifa_next) {
+-    if (ifa->ifa_flags & IFF_LOOPBACK) // Skip loop-back interfaces
+-      continue;
+-    // only check for the named interface, if specified
+-    if ((config.interface == NULL) || (strcmp(config.interface, ifa->ifa_name) == 0)) {
+-      switch (ifa->ifa_addr->sa_family) {
+-      case AF_INET: { // ipv4
+-        uint32_t ip = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;
+-        struct rr_entry *a_e =
+-            rr_create_a(create_nlabel(hostname), ip); // TTL should be 120 seconds
+-        mdnsd_add_rr(svr, a_e);
+-      } break;
+-      case AF_INET6: { // ipv6
+-        struct in6_addr *addr = &((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr;
+-        struct rr_entry *aaaa_e =
+-            rr_create_aaaa(create_nlabel(hostname), addr); // TTL should be 120 seconds
+-        mdnsd_add_rr(svr, aaaa_e);
+-      } break;
+-      }
+-    }
+-  }
+-
+-  freeifaddrs(ifa);
+-
+   char *txtwithoutmetadata[] = {MDNS_RECORD_WITHOUT_METADATA, NULL};
+ #ifdef CONFIG_METADATA
+   char *txtwithmetadata[] = {MDNS_RECORD_WITH_METADATA, NULL};

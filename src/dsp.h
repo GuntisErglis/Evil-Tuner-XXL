@@ -184,11 +184,45 @@ struct Grain {
   bool on = false;
   double pos = 0, inc = 1;
   int age = 0, len = 1;
+  int wait = 0;            // frames before it starts (a synced grain lands on its beat inside a block)
   float gl = 0, gr = 0;    // pan gains x amplitude
 };
 
+// ------------------------------------------------------------------------------------------------ scales
+// SCALE: the semitones a pitch may land on (within an octave), and the intervals CLOUD scatters grains to.
+static const int kScaleNotes[8][8] = {
+    {0, 1, 2, 3, 4, 5, 6, 7},    // CHROMATIC (every semitone: the list is not used)
+    {0, 2, 4, 5, 7, 9, 11, -1},  // MAJOR
+    {0, 2, 3, 5, 7, 8, 10, -1},  // MINOR
+    {0, 2, 3, 5, 7, 9, 10, -1},  // DORIAN
+    {0, 2, 4, 7, 9, -1},         // PENTATONIC
+    {0, 3, 5, 7, 10, -1},        // MINOR PENTA
+    {0, 7, -1},                  // 5THS + OCT
+    {0, -1},                     // OCTAVES
+};
+
+// the nearest semitone the scale allows (scale 0: any semitone)
+inline int scale_snap(int st, int scale) {
+  if (scale <= 0 || scale > 7) return st;
+  int best = st, bd = 99;
+  for (int oct = -5; oct <= 5; ++oct)
+    for (int k = 0; k < 8 && kScaleNotes[scale][k] >= 0; ++k) {
+      int c = oct * 12 + kScaleNotes[scale][k];
+      int d = abs(c - st);
+      if (d < bd || (d == bd && c < best)) { bd = d; best = c; }
+    }
+  return best;
+}
+
+// PITCH (0..1) as whole semitones, -24..+24, on the scale
+inline int pitch_semis(float knob, int scale) {
+  int st = (int)lroundf((knob - 0.5f) * 48.f);
+  return scale_snap(st, scale);
+}
+
 struct GrainParams {
   float pos, size, pitch, grains, spread, cloud, detune, shape;
+  int scale = 0;
 };
 
 struct Grains {
@@ -237,7 +271,7 @@ struct Grains {
     float m = fabsf(shape - 0.5f) * 2.f;   // 0 at the middle, 1 at the ends
     return hann * (1.f - m) + perc * m;
   }
-  void spawn(const GrainParams& p, float semis, float amp) {
+  void spawn(const GrainParams& p, float semis, float amp, int wait = 0) {
     int slot = -1, oldest = -1, oa = -1;
     for (int i = 0; i < kMaxGrains; ++i) {
       if (!g[i].on) { slot = i; break; }
@@ -247,10 +281,20 @@ struct Grains {
     Grain& q = g[slot];
     float size_ms = expmap(p.size, 8.f, 1000.f);
     int len = std::max(64, (int)(size_ms * 0.001f * kSR));
-    float st = semis + (p.pitch - 0.5f) * 48.f;
-    if (fabsf(p.pitch - 0.5f) < 0.012f) st = semis;                       // a detent at no transposition
+    float st = semis + (float)pitch_semis(p.pitch, p.scale);               // whole semitones, on the scale
     st += p.detune * 0.5f * rng.bi();                                      // up to +-0.5 semitone per grain
-    if (p.cloud > 0.f && rng.uni() < p.cloud * 0.3f) st += rng.uni() < 0.5f ? 12.f : -12.f;   // octave scatter
+    if (p.cloud > 0.f && rng.uni() < p.cloud * 0.3f) {
+      // CLOUD scatters grains to musical intervals: octaves, and with a SCALE the scale's own notes above / below
+      int iv = rng.uni() < 0.5f ? 12 : -12;
+      if (p.scale > 0 && rng.uni() < 0.6f) {
+        int cnt = 0;
+        while (cnt < 8 && kScaleNotes[p.scale][cnt] >= 0) cnt++;
+        int k = 1 + (int)(rng.uni() * (cnt - 1 > 0 ? cnt - 1 : 1));
+        iv = cnt > 1 ? kScaleNotes[p.scale][k < cnt ? k : cnt - 1] : 12;
+        if (rng.uni() < 0.35f) iv -= 12;
+      }
+      st += (float)iv;
+    }
     double ratio = pow(2.0, st / 12.0);
     bool rev = p.cloud > 0.f && rng.uni() < p.cloud * 0.25f;
     double span = ratio * len;
@@ -263,12 +307,26 @@ struct Grains {
     double start = (double)w - back;
     q.on = true;
     q.age = 0;
+    q.wait = wait;
     q.len = len;
     q.inc = rev ? -ratio : ratio;
     q.pos = rev ? start + span : start;
     float pan = 0.5f + 0.5f * p.spread * rng.bi();
     q.gl = amp * sqrtf(1.f - pan);
     q.gr = amp * sqrtf(pan);
+  }
+  // GRAIN SYNC: a grain on each step of the beat grid that falls in this block (GRAINS: the chance a step plays,
+  // CLOUD: how often a step plays two grains)
+  inline void schedule_sync(const GrainParams& p, float semis, float amp, double beat0, double bpf, double step, int n) {
+    double b1 = beat0 + bpf * n;
+    double k = ceil(beat0 / step - 1e-9);
+    int guard = 0;
+    for (double t = k * step; t < b1 && guard++ < 8; t += step) {
+      int at = std::max(0, std::min(n - 1, (int)((t - beat0) / bpf)));
+      float chance = 0.15f + 0.85f * p.grains;
+      if (rng.uni() <= chance) spawn(p, semis, amp, at);
+      if (p.cloud > 0.f && rng.uni() < p.cloud * 0.5f) spawn(p, semis, amp * 0.8f, at + (int)(rng.uni() * step / bpf * 0.5));
+    }
   }
   // one scheduler: grains per second from GRAINS, jittered by CLOUD
   inline void schedule(int v, const GrainParams& p, float semis, float amp, int n) {
@@ -298,8 +356,10 @@ struct Grains {
       double pos = q.pos;
       while (pos < 0) pos += kGrainBuf;
       while (pos >= kGrainBuf) pos -= kGrainBuf;
-      int m = std::min(n, q.len - q.age);
-      for (int i = 0; i < m; ++i) {
+      int w0 = std::min(q.wait, n);
+      q.wait -= w0;
+      int m = std::min(n - w0, q.len - q.age);
+      for (int i = w0; i < w0 + m; ++i) {
         int wi = (int)wp;
         float wv = wtab[wi] + (wp - wi) * (wtab[wi + 1] - wtab[wi]);
         int i0 = (int)pos;

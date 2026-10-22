@@ -12,31 +12,47 @@
 #include <thread>
 #include <vector>
 #include <unistd.h>
+#include <dirent.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
+#include <sys/stat.h>
+#include <string>
 
 #include "dsp.h"
 
 namespace et {
 
-static const int kTapeFrames = 180 * ET_SR;   // 3 minutes, 16-bit stereo: 31.8 MB
-static const int kLoopMax = 48 * ET_SR;       // 48 s: 8 bars down to 40 BPM
+static const int kTapeFrames = 180 * ET_SR;   // 3 minutes
+static const int kLoopMax = 180 * ET_SR;      // 3 minutes
+
+// Big buffers come from calloc: the kernel maps their pages only as they are first written, so a 3-minute buffer
+// costs memory only for what has been recorded into it.
+template <class T>
+static T* big_alloc(size_t n) { return static_cast<T*>(calloc(n, sizeof(T))); }
 
 struct Tape {
-  std::vector<int16_t> buf;
-  int w = 0, filled = 0;
-  void init() { buf.assign((size_t)kTapeFrames * 2, 0); }
+  int16_t* buf = nullptr;   // interleaved stereo
+  std::atomic<int> w{0};
+  int filled = 0;
+  void init() { buf = big_alloc<int16_t>((size_t)kTapeFrames * 2); }
+  void free_all() { free(buf); buf = nullptr; }
   inline void write(const float* l, const float* r, int n) {
+    if (!buf) return;
+    int wi = w.load(std::memory_order_relaxed);
     for (int i = 0; i < n; ++i) {
-      buf[(size_t)w * 2] = (int16_t)lrintf(clampf(l[i], -1.f, 1.f) * 32767.f);
-      buf[(size_t)w * 2 + 1] = (int16_t)lrintf(clampf(r[i], -1.f, 1.f) * 32767.f);
-      if (++w >= kTapeFrames) w = 0;
+      buf[(size_t)wi * 2] = (int16_t)lrintf(clampf(l[i], -1.f, 1.f) * 32767.f);
+      buf[(size_t)wi * 2 + 1] = (int16_t)lrintf(clampf(r[i], -1.f, 1.f) * 32767.f);
+      if (++wi >= kTapeFrames) wi = 0;
       if (filled < kTapeFrames) filled++;
     }
+    w.store(wi, std::memory_order_release);
   }
-  // the last `frames` frames (oldest first)
-  int last(int frames, float* l, float* r) const {
-    frames = std::min(frames, filled);
+  // `frames` frames ending at write position `end` (oldest first), into l / r
+  int read_back(int end, int frames, int have, float* l, float* r) const {
+    frames = std::min(frames, have);
     for (int i = 0; i < frames; ++i) {
-      int k = w - frames + i;
+      int k = end - frames + i;
       if (k < 0) k += kTapeFrames;
       l[i] = buf[(size_t)k * 2] * (1.f / 32768.f);
       r[i] = buf[(size_t)k * 2 + 1] * (1.f / 32768.f);
@@ -45,102 +61,247 @@ struct Tape {
   }
 };
 
+// ------------------------------------------------------------------------------------------------ the looper
+// Two loop buffers, A and B (3 minutes each). One is the loop; the other is the loop before the last change, so UNDO is
+// a swap (and a second UNDO a redo). Whole-loop changes (CAPTURE, a STRETCH render) are written into the other buffer
+// by the worker and swapped in; a new recording is written into the other buffer and swapped in when it closes; an
+// overdub works on the loop itself while a copier, running ahead of the play head, keeps what was there in the other
+// buffer. Nothing that copies a long loop ever runs on the audio thread.
 struct Looper {
-  std::vector<float> L, R, uL, uR;   // the loop and the one before (UNDO)
-  int len = 0, ulen = 0;
+  float* bl[2] = {nullptr, nullptr};
+  float* br[2] = {nullptr, nullptr};
+  int cur = 0;                        // the loop: buffer cur; the one before: 1 - cur
+  int len[2] = {0, 0};
   double pos = 0;
   bool playing = false, rec = false, od = false, rev = false;
   int speed = 0;                      // -1 HALF, 0, +1 DOUBLE
-  int rec_target = 0;                 // frames (0: FREE, until REC again)
+  int rec_target = 0;                 // frames (0: FREE, until REC again or 3 minutes)
+  int rec_len = 0;                    // a new recording's length so far (into buffer 1 - cur)
   float fade = 0.f;                   // playback gain (clicks avoided on start / stop)
-  void init() {
-    L.assign(kLoopMax, 0.f); R.assign(kLoopMax, 0.f);
-    uL.assign(kLoopMax, 0.f); uR.assign(kLoopMax, 0.f);
+  // the overdub's copier: keeps the loop as it was before this layer, ahead of the play head
+  int cp_pos = 0, cp_left = 0, cp_dir = 1;
+  bool have_undo = false;
+  // set by the audio thread while it writes a loop buffer (a recording, an overdub, the copier): the worker never
+  // writes a buffer then (and the audio thread starts no write while the worker's `busy` is set)
+  std::atomic<bool> writing{false};
+  void update_writing() { writing.store(rec || od || cp_left > 0); }
+  // where the play head was for each of the last frames (REC OUT writes the processed output back where it came from)
+  static const int kHist = 1024;
+  int hist[kHist];
+  uint32_t hist_n = 0;
+
+  bool init() {
+    for (int b = 0; b < 2; ++b) { bl[b] = big_alloc<float>(kLoopMax); br[b] = big_alloc<float>(kLoopMax); }
+    return bl[0] && bl[1] && br[0] && br[1];
   }
-  void keep_undo() {
-    std::copy(L.begin(), L.begin() + len, uL.begin());
-    std::copy(R.begin(), R.begin() + len, uR.begin());
-    ulen = len;
-  }
-  void undo() {
-    if (!ulen) return;
-    std::swap(L, uL);
-    std::swap(R, uR);
-    std::swap(len, ulen);
-    pos = 0;
-  }
-  void set(const float* l, const float* r, int n) {   // a new loop (capture, a stretch render)
-    keep_undo();
-    n = std::min(n, kLoopMax);
-    std::copy(l, l + n, L.begin());
-    std::copy(r, r + n, R.begin());
-    len = n;
-    edge_fades();
-    pos = 0;
-    playing = len > 0;
-    rec = od = false;
-  }
-  void edge_fades() {
-    int f = std::min(len / 4, 132);   // 3 ms
+  void free_all() { for (int b = 0; b < 2; ++b) { free(bl[b]); free(br[b]); bl[b] = br[b] = nullptr; } }
+  int length() const { return len[cur]; }
+  float* L() { return bl[cur]; }
+  float* R() { return br[cur]; }
+  float* oL() { return bl[1 - cur]; }
+  float* oR() { return br[1 - cur]; }
+
+  static void edge_fades(float* l, float* r, int n) {
+    int f = std::min(n / 4, 132);   // 3 ms
     for (int i = 0; i < f; ++i) {
       float g = (float)i / f;
-      L[i] *= g; R[i] *= g;
-      L[len - 1 - i] *= g; R[len - 1 - i] *= g;
+      l[i] *= g; r[i] *= g;
+      l[n - 1 - i] *= g; r[n - 1 - i] *= g;
     }
   }
-  void clear() { keep_undo(); len = 0; pos = 0; playing = rec = od = false; }
+  // the other buffer becomes the loop (a capture, a render, a closed recording); the old loop is kept for UNDO
+  void swap_in(int new_len, bool play) {
+    cur = 1 - cur;
+    len[cur] = new_len;
+    pos = 0;
+    playing = play && new_len > 0;
+    od = rec = false;
+    cp_left = 0;
+    have_undo = true;
+  }
+  bool undo() {
+    if (!have_undo || rec || od || cp_left > 0) return false;
+    cur = 1 - cur;
+    if (pos >= len[cur]) pos = 0;
+    playing = playing && len[cur] > 0;
+    return true;
+  }
+  void clear() {
+    if (rec || od) { rec = od = false; }
+    cur = 1 - cur;
+    len[cur] = 0;
+    pos = 0;
+    playing = false;
+    have_undo = true;
+  }
   void start_rec(int target) {
-    keep_undo();
-    len = 0;
     rec = true;
     od = false;
     playing = false;
     rec_target = target;
+    rec_len = 0;
   }
+  // a new recording closes: it becomes the loop
   void end_rec() {
     rec = false;
-    if (len > 0) { edge_fades(); playing = true; pos = 0; }
-  }
-  // in: what the looper hears; out: the loop's playback (added by the caller). knob_speed 0..1 (0.5 = 1x), start 0..1
-  void process(const float* il, const float* ir, float* ol, float* orr, int n, float knob_speed, float start, float fb) {
-    if (rec) {
-      for (int i = 0; i < n && rec; ++i) {
-        if (len < kLoopMax) { L[len] = il[i]; R[len] = ir[i]; len++; }
-        if ((rec_target && len >= rec_target) || len >= kLoopMax) end_rec();
-      }
+    if (rec_len > 0) {
+      edge_fades(oL(), oR(), rec_len);
+      swap_in(rec_len, true);
     }
+  }
+  void start_overdub() {
+    od = true;
+    cp_pos = (int)pos;
+    cp_left = len[cur];
+    cp_dir = rev ? -1 : 1;
+    len[1 - cur] = len[cur];
+    have_undo = true;
+  }
+  // the copier: up to `n` frames of the loop into the other buffer, from cp_pos in the play direction
+  void copy_ahead(int n) {
+    int L_ = len[cur];
+    if (cp_left <= 0 || L_ <= 0) return;
+    float *sl = L(), *sr = R(), *dl = oL(), *dr = oR();
+    int m = std::min(n, cp_left);
+    for (int i = 0; i < m; ++i) {
+      int k = cp_pos;
+      dl[k] = sl[k];
+      dr[k] = sr[k];
+      cp_pos += cp_dir;
+      if (cp_pos >= L_) cp_pos = 0;
+      else if (cp_pos < 0) cp_pos = L_ - 1;
+    }
+    cp_left -= m;
+  }
+  double rate_of(float knob_speed) const {
     double rate = pow(2.0, (knob_speed - 0.5) * 2.0);   // +-1 octave
     if (fabsf(knob_speed - 0.5f) < 0.012f) rate = 1.0;
     if (speed < 0) rate *= 0.5;
     if (speed > 0) rate *= 2.0;
-    if (rev) rate = -rate;
-    float want = playing && len > 0 ? 1.f : 0.f;
-    if (want == 0.f && fade < 1e-4f) {   // nothing playing: nothing to do
-      fade = 0.f;
-      for (int i = 0; i < n; ++i) ol[i] = orr[i] = 0.f;
-      return;
+    return rev ? -rate : rate;
+  }
+  // il / ir: what a recording or an overdub (REC IN) takes; ol / orr: the loop's playback. knob_speed 0..1 (0.5 = 1x),
+  // start 0..1. rec_in: REC takes il / ir now (REC OUT takes the processed output later: write_out()).
+  void process(const float* il, const float* ir, float* ol, float* orr, int n, float knob_speed, float start, float fb,
+               bool rec_in) {
+    if (od) copy_ahead(8192);
+    else if (cp_left > 0) copy_ahead(8192);
+    if (rec && rec_in) {
+      float *dl = oL(), *dr = oR();
+      for (int i = 0; i < n && rec; ++i) {
+        if (rec_len < kLoopMax) { dl[rec_len] = il[i]; dr[rec_len] = ir[i]; rec_len++; }
+        if ((rec_target && rec_len >= rec_target) || rec_len >= kLoopMax) end_rec();
+      }
     }
+    int L_ = len[cur];
+    double rate = rate_of(knob_speed);
+    float want = playing && L_ > 0 ? 1.f : 0.f;
+    float *sl = L(), *sr = R();
     for (int i = 0; i < n; ++i) {
       fade += (want - fade) * 0.004f;
-      if (len <= 0 || fade < 1e-4f) { ol[i] = orr[i] = 0.f; continue; }
-      double p = pos + start * len;
-      while (p >= len) p -= len;
-      while (p < 0) p += len;
+      if (L_ <= 0 || fade < 1e-4f) {
+        ol[i] = orr[i] = 0.f;
+        hist[hist_n++ & (kHist - 1)] = -1;
+        continue;
+      }
+      double p = pos + start * L_;
+      while (p >= L_) p -= L_;
+      while (p < 0) p += L_;
       int i0 = (int)p;
       float fr = (float)(p - i0);
-      int i1 = i0 + 1 >= len ? 0 : i0 + 1;
-      ol[i] = (L[i0] + fr * (L[i1] - L[i0])) * fade;
-      orr[i] = (R[i0] + fr * (R[i1] - R[i0])) * fade;
-      if (od && playing) {   // overdub: the old sound fades by OVERDUB FB, the new one is added
-        L[i0] = L[i0] * fb + il[i];
-        R[i0] = R[i0] * fb + ir[i];
+      int i1 = i0 + 1 >= L_ ? 0 : i0 + 1;
+      ol[i] = (sl[i0] + fr * (sl[i1] - sl[i0])) * fade;
+      orr[i] = (sr[i0] + fr * (sr[i1] - sr[i0])) * fade;
+      hist[hist_n++ & (kHist - 1)] = playing ? i0 : -1;
+      if (od && playing && rec_in) {   // overdub (REC IN): the old sound fades by OVERDUB FB, the new one is added
+        sl[i0] = sl[i0] * fb + il[i];
+        sr[i0] = sr[i0] * fb + ir[i];
       }
-      pos += rate;
-      while (pos >= len) pos -= len;
-      while (pos < 0) pos += len;
+      if (playing) {
+        pos += rate;
+        while (pos >= L_) pos -= L_;
+        while (pos < 0) pos += L_;
+      }
+    }
+  }
+  // REC OUT: the plugin's output (`latency` frames behind the loop's play head) goes where it came from: an overdub
+  // replaces those frames with what is heard (the loop is in it already), a new recording takes it in order.
+  void write_out(const float* l, const float* r, int n, int latency) {
+    if (rec) {
+      float *dl = oL(), *dr = oR();
+      for (int i = 0; i < n && rec; ++i) {
+        if (rec_len < kLoopMax) { dl[rec_len] = l[i]; dr[rec_len] = r[i]; rec_len++; }
+        if ((rec_target && rec_len >= rec_target) || rec_len >= kLoopMax) end_rec();
+      }
+      return;
+    }
+    if (!od) return;
+    float *sl = L(), *sr = R();
+    for (int i = 0; i < n; ++i) {
+      uint32_t at = hist_n - (uint32_t)n + (uint32_t)i - (uint32_t)latency;
+      int k = hist[at & (kHist - 1)];
+      if (k < 0 || k >= len[cur]) continue;
+      sl[k] = l[i];
+      sr[k] = r[i];
     }
   }
 };
+
+// ------------------------------------------------------------------------------------------------ WAV files
+// 24-bit PCM, 44.1 kHz stereo: <dir>/eviltunerrecNN.wav, NN the next number after the highest already there (01, 02 ..
+// 99, 100 ..), never an existing file. Written to a temporary name, then renamed.
+inline int next_rec_number(const std::string& dir) {
+  int best = 0;
+  DIR* d = opendir(dir.c_str());
+  if (!d) return 1;
+  while (struct dirent* e = readdir(d)) {
+    int n = 0;
+    char tail[8];
+    if (sscanf(e->d_name, "eviltunerrec%d.%7s", &n, tail) == 2 && !strcasecmp(tail, "wav") && n > best) best = n;
+  }
+  closedir(d);
+  return best + 1;
+}
+
+inline bool make_dirs(const std::string& path) {
+  std::string acc;
+  for (size_t i = 0; i < path.size(); ++i) {
+    acc += path[i];
+    if ((path[i] == '/' && i > 0) || i + 1 == path.size()) mkdir(acc.c_str(), 0755);
+  }
+  struct stat st;
+  return stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode);
+}
+
+inline bool write_wav24(const std::string& path, const float* l, const float* r, int frames) {
+  std::string tmp = path + ".part";
+  FILE* f = fopen(tmp.c_str(), "wb");
+  if (!f) return false;
+  auto u32 = [&](uint32_t v) { uint8_t b[4] = {(uint8_t)v, (uint8_t)(v >> 8), (uint8_t)(v >> 16), (uint8_t)(v >> 24)}; fwrite(b, 1, 4, f); };
+  auto u16 = [&](uint16_t v) { uint8_t b[2] = {(uint8_t)v, (uint8_t)(v >> 8)}; fwrite(b, 1, 2, f); };
+  uint32_t data = (uint32_t)frames * 6;
+  fwrite("RIFF", 1, 4, f); u32(36 + data); fwrite("WAVEfmt ", 1, 8, f); u32(16);
+  u16(1); u16(2); u32(ET_SR); u32(ET_SR * 6); u16(6); u16(24);
+  fwrite("data", 1, 4, f); u32(data);
+  std::vector<uint8_t> chunk;
+  chunk.reserve(4096 * 6);
+  bool ok = true;
+  for (int i = 0; i < frames && ok; ) {
+    chunk.clear();
+    int m = std::min(4096, frames - i);
+    for (int k = 0; k < m; ++k)
+      for (int c = 0; c < 2; ++c) {
+        float x = clampf(c ? r[i + k] : l[i + k], -1.f, 1.f);
+        int32_t v = (int32_t)lrintf(x * 8388607.f);
+        chunk.push_back((uint8_t)v); chunk.push_back((uint8_t)(v >> 8)); chunk.push_back((uint8_t)(v >> 16));
+      }
+    ok = fwrite(chunk.data(), 1, chunk.size(), f) == chunk.size();
+    i += m;
+  }
+  if (fclose(f) != 0) ok = false;
+  if (!ok) { unlink(tmp.c_str()); return false; }
+  return rename(tmp.c_str(), path.c_str()) == 0;
+}
 
 // ------------------------------------------------------------------------------------------------ STRETCH renders
 // Whole-loop transformations in the spirit of The Good Bits' STRETCH FX (clickysteve, MIT); written here for the loop:
@@ -307,49 +468,121 @@ inline void stretch_render(StretchJob& j) {
   j.R.swap(oR);
 }
 
-// the worker: one job at a time
-struct Stretcher {
+// ------------------------------------------------------------------------------------------------ the tape worker
+// One thread for everything long on the TAPE page: CAPTURE (the tape into the other loop buffer), a STRETCH render
+// (copy the loop, render, write the result into the other buffer) and SAVE (the loop to a WAV file). While a job reads
+// or writes a loop buffer, `busy` is set: the audio thread starts no recording, overdub, swap or undo (it keeps
+// playing). When a job has filled the other buffer, `swap_len` >= 0 tells the audio thread to swap it in.
+struct TapeWorker {
+  enum Kind { NONE, CAPTURE, STRETCH, SAVE };
   std::thread th;
   std::mutex mu;
-  StretchJob job;
-  bool have = false, done = false;
-  std::atomic<bool> busy{false}, quit{false};
+  std::atomic<bool> quit{false};
+  std::atomic<bool> busy{false};        // the loop buffers are in use by a job
+  std::atomic<int> swap_len{-1};        // >= 0: the other buffer holds a new loop of this length
+  std::atomic<int> running{NONE};
+  // the job (set by the audio thread when not busy)
+  int kind = NONE;
+  Looper* lp = nullptr;
+  Tape* tp = nullptr;
+  int src = 0, n = 0;                   // the loop buffer to read, its length
+  int tape_end = 0, tape_have = 0;      // CAPTURE: where the tape ended, how much it had
+  int skind = 0;
+  float samt = 0.5f;
+  std::string dir;                      // SAVE: the folder
+  // the result message, for the screen
+  std::string msg;
+  bool msg_new = false;
+
   void start() {
     th = std::thread([this] {
       while (!quit.load()) {
-        StretchJob j;
-        bool go = false;
+        int k;
         {
           std::lock_guard<std::mutex> lk(mu);
-          if (have) { j = std::move(job); have = false; go = true; }
+          k = kind;
+          kind = NONE;
         }
-        if (!go) { usleep(20000); continue; }
-        busy = true;
-        stretch_render(j);
-        {
-          std::lock_guard<std::mutex> lk(mu);
-          job = std::move(j);
-          done = true;
-        }
-        busy = false;
+        if (k == NONE) { usleep(10000); continue; }
+        running = k;
+        run(k);
+        running = NONE;
       }
     });
   }
   void stop() { quit = true; if (th.joinable()) th.join(); }
-  bool submit(StretchJob&& j) {
+  void post(const std::string& m) { std::lock_guard<std::mutex> lk(mu); msg = m; msg_new = true; }
+  bool take_msg(std::string& out) {
     std::unique_lock<std::mutex> lk(mu, std::try_to_lock);
-    if (!lk.owns_lock() || busy.load() || have) return false;
-    job = std::move(j);
-    have = true;
-    done = false;
+    if (!lk.owns_lock() || !msg_new) return false;
+    out = msg;
+    msg_new = false;
     return true;
   }
-  bool take(StretchJob& out) {
+  // the audio thread: a job, when idle (returns false while one runs)
+  bool submit(int k, Looper* l, Tape* t, int frames = -1) {
+    if (busy.load() || running.load() != NONE || swap_len.load() >= 0) return false;
     std::unique_lock<std::mutex> lk(mu, std::try_to_lock);
-    if (!lk.owns_lock() || !done) return false;
-    out = std::move(job);
-    done = false;
+    if (!lk.owns_lock() || kind != NONE) return false;
+    lp = l;
+    tp = t;
+    src = l->cur;
+    n = frames >= 0 ? frames : l->length();
+    if (t) { tape_end = t->w.load(); tape_have = t->filled; }
+    busy = true;
+    kind = k;
     return true;
+  }
+  void run(int k) {
+    if (k == CAPTURE) {
+      int got = tp->read_back(tape_end, n, std::min(tape_have, kTapeFrames - 10 * ET_SR), lp->bl[1 - src], lp->br[1 - src]);
+      if (got > 0) Looper::edge_fades(lp->bl[1 - src], lp->br[1 - src], got);
+      char b[64];
+      snprintf(b, sizeof b, got ? "CAPTURED %.1f S" : "THE TAPE IS EMPTY", got / (float)ET_SR);
+      post(b);
+      if (got > 0) swap_len = got;
+      busy = false;
+    } else if (k == STRETCH) {
+      StretchJob j;
+      j.kind = skind;
+      j.amt = samt;
+      j.L.assign(lp->bl[src], lp->bl[src] + n);
+      j.R.assign(lp->br[src], lp->br[src] + n);
+      busy = false;                     // the render works on its own copy: the loop is free meanwhile
+      stretch_render(j);
+      // write the result into the other buffer once the audio thread writes no loop buffer (a recording, an
+      // overdub or its copier): take `busy` first, then check `writing` (the audio thread sets `writing`, then checks
+      // `busy`), so one of the two always sees the other
+      while (!quit.load()) {
+        busy.store(true);
+        if (!lp->writing.load()) break;
+        busy.store(false);
+        usleep(20000);
+      }
+      int m = std::min((int)j.L.size(), kLoopMax);
+      int dst = 1 - lp->cur;
+      std::copy(j.L.begin(), j.L.begin() + m, lp->bl[dst]);
+      std::copy(j.R.begin(), j.R.begin() + m, lp->br[dst]);
+      post("STRETCH DONE (UNDO TO GO BACK)");
+      swap_len = m;
+      busy = false;
+    } else if (k == SAVE) {
+      std::string text;
+      if (n <= 0) text = "NO LOOP TO SAVE";
+      else if (!make_dirs(dir)) text = "CAN'T WRITE THE RECORDINGS FOLDER";
+      else {
+        int num = next_rec_number(dir);
+        char name[64];
+        snprintf(name, sizeof name, "eviltunerrec%02d.wav", num);
+        bool ok = write_wav24(dir + "/" + name, lp->bl[src], lp->br[src], n);
+        char b[96];
+        snprintf(b, sizeof b, ok ? "SAVED %s" : "SAVE FAILED (DISK FULL?)", name);
+        text = b;
+        for (auto& c : text) c = (char)toupper((unsigned char)c);
+      }
+      busy = false;
+      post(text);
+    }
   }
 };
 

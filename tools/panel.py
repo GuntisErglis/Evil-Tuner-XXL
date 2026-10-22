@@ -45,20 +45,20 @@ def key_row(tab, keys, y, x0, x1, look, w=48, h=48, views=None):
 # ------------------------------------------------------------------------------------------------ RADIO (classic)
 T = 0
 # the amber tuning window: the station, now playing, the state
-TEXTS += [(T, "st_name", 70, 22, 740, 42, 36, "1c0f02", "left", None),
-          (T, "st_title", 70, 64, 740, 30, 24, "1c0f02", "left", None),
-          (T, "st_info", 70, 94, 740, 24, 18, "3a2008", "left", None)]
+TEXTS += [(T, "st_name", 70, 20, 740, 44, 38, "1c0f02", "left", None),
+          (T, "st_title", 70, 64, 740, 32, 28, "1c0f02", "left", None),
+          (T, "st_info", 70, 96, 740, 28, 22, "3a2008", "left", None)]
 # sources and the list's modes: amber push buttons (right of the window)
 key_row(T, [("src_radio", "RADIO"), ("src_phone", "PHONE"), ("src_air", "AIRPLAY")], 52, 860, 1236, "amber", 104, 46)
 key_row(T, [("search", "SEARCH"), ("top", "BROWSE"), ("favs", "FAVS"), ("fav", "FAV")], 128, 860, 1236, "amber", 86, 40)
 # the station list (view LIST): the page line, eight rows, the page keys
-TEXTS.append((T, "page_txt", 60, 166, 760, 24, 20, AMBER, "left", [0]))
+TEXTS.append((T, "page_txt", 60, 164, 760, 28, 22, AMBER, "left", [0]))
 for i in range(8):
     c, r = i % 2, i // 2
     ROWS.append((T, "row%d" % (i + 1), 56 + c * 388, 196 + r * 58, 380, 50))
-key_row(T, [("pg_prev", "< PAGE"), ("pg_next", "PAGE >")], 448, 56, 824, "amber", 120, 36, views=[0])
+key_row(T, [("pg_prev", "< PAGE"), ("pg_next", "PAGE >")], 448, 56, 824, "amber", 130, 40, views=[0])
 # the keyboard (view KEYS) in the list's place
-TEXTS.append((T, "query", 70, 166, 740, 30, 26, AMBER, "left", [1]))
+TEXTS.append((T, "query", 70, 164, 740, 32, 28, AMBER, "left", [1]))
 for r, chars in enumerate(["1234567890", "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]):
     n = len(chars)
     x0 = 440 - n * 76.8 / 2
@@ -69,14 +69,14 @@ key_row(T, [("kb_space", "SPACE"), ("kb_del", "DEL"), ("kb_clr", "CLEAR"), ("kb_
 # PHONE / AIRPLAY (views 2, 3): what to do on the phone
 TEXTS.append((T, "phone_txt", 70, 230, 740, 40, 30, AMBER, "left", [2]))
 TEXTS.append((T, "air_txt", 70, 230, 740, 40, 30, AMBER, "left", [3]))
-STATIC += [(T, "ANDROID: OPEN ROC DROID, CHOOSE SENDER,", 440, 300, 14, "c9b59a", [2]),
-           (T, "ENTER THE ADDRESS ABOVE AND PRESS START.", 440, 326, 14, "c9b59a", [2]),
-           (T, "SAME WI-FI, OR THE PHONE'S HOTSPOT.", 440, 352, 14, "c9b59a", [2]),
-           (T, "NOTHING IS SENT ANYWHERE ELSE: THE FORCE ONLY LISTENS.", 440, 400, 12, "8d7a60", [2]),
-           (T, "IPHONE / IPAD / MAC: CONTROL CENTRE > AIRPLAY", 440, 300, 14, "c9b59a", [3]),
-           (T, "> EVIL TUNER XXL. SAME WI-FI, OR THE IPHONE'S", 440, 326, 14, "c9b59a", [3]),
-           (T, "HOTSPOT WITH THE FORCE JOINED TO IT.", 440, 352, 14, "c9b59a", [3]),
-           (T, "THE TITLE PLAYING SHOWS IN THE WINDOW ABOVE.", 440, 400, 12, "8d7a60", [3])]
+STATIC += [(T, "Android: open Roc Droid, choose Sender,", 440, 300, 24, "dcc7a8", [2]),
+           (T, "enter the address above, press Start.", 440, 336, 24, "dcc7a8", [2]),
+           (T, "Same Wi-Fi, or the phone's hotspot.", 440, 372, 24, "dcc7a8", [2]),
+           (T, "Nothing is sent anywhere else: the Force only listens.", 440, 420, 20, "a8916f", [2]),
+           (T, "iPhone / iPad / Mac: Control Centre > AirPlay", 440, 300, 24, "dcc7a8", [3]),
+           (T, "> Evil Tuner XXL. Same Wi-Fi, or the iPhone's", 440, 336, 24, "dcc7a8", [3]),
+           (T, "hotspot with the Force joined to it.", 440, 372, 24, "dcc7a8", [3]),
+           (T, "The title playing shows in the window above.", 440, 420, 20, "a8916f", [3])]
 # transport: amber push buttons along the bottom
 key_row(T, [("prev", "PREV"), ("play", "PLAY"), ("stop", "STOP"), ("next", "NEXT"), ("sync", "SYNC")], 552, 56, 824,
         "amber", 120, 54)
@@ -87,13 +87,14 @@ QLINKS[T] = [["genre", "country", "sort", "kbps", "in_lvl"]]
 
 # ------------------------------------------------------------------------------------------------ PET (modern)
 T = 1
-SECTIONS += [(T, "GRAINS", 16, 12, 1248, 196), (T, "TONE", 16, 214, 1248, 196)]
-knob_row(T, ["pos", "size", "pitch", "grains", "spread", "cloud", "detune"], 100, 16, 1264, 106, "dark")
-knob_row(T, ["shape", "cutoff", "reso", "flt_env", "osc_lvl", "mix", "volume"], 302, 16, 1264, 106, "dark")
-key_row(T, [("freeze", "FREEZE"), ("keys", "KEYS"), None, ("ft_lp", "LP"), ("ft_hp", "HP"), ("ft_bp", "BP"),
-            ("ft_comb", "COMB"), ("ft_dual", "DUAL"), None, ("osc", "OSC"), ("random", "RANDOM")], 462, 16, 1264, "round")
-QLINKS[T] = [["pos", "size", "pitch", "grains", "spread", "cloud", "detune", "shape"],
-             ["cutoff", "reso", "flt_env", "osc_lvl", "mix", "volume", "pos", "pitch"]]
+SECTIONS += [(T, "GRAIN ENGINE", 16, 10, 1248, 206), (T, "GRAIN SHAPE  /  TONE", 16, 222, 1248, 206)]
+knob_row(T, ["engine", "cl_mode", "pos", "size", "pitch", "scale", "grains", "grain_sync", "spread"], 88, 16, 1264, 92, "dark")
+knob_row(T, ["cloud", "detune", "shape", "cutoff", "reso", "flt_env", "osc_lvl", "mix", "volume"], 300, 16, 1264, 92, "dark")
+key_row(T, [("freeze", "FREEZE"), ("keys", "KEYS"), ("ft_lp", "LP"), ("ft_hp", "HP"), ("ft_bp", "BP"), ("ft_comb", "COMB"),
+            ("ft_dual", "DUAL"), ("osc", "OSC"), ("random", "RANDOM")], 470, 16, 1264, "round")
+QLINKS[T] = [["engine", "cl_mode", "pos", "size", "pitch", "scale", "grains", "grain_sync"],
+             ["spread", "cloud", "detune", "shape", "cutoff", "reso", "mix", "volume"],
+             ["flt_env", "osc_lvl", "-", "-", "-", "-", "-", "-"]]
 
 # ------------------------------------------------------------------------------------------------ FX (modern)
 T = 2
@@ -128,13 +129,14 @@ QLINKS[T] = [["gate_rate", "gate_depth", "gate_atk", "gate_rel", "gate_swing", "
 
 # ------------------------------------------------------------------------------------------------ TAPE (modern)
 T = 5
-SECTIONS += [(T, "TAPE  /  LOOPER", 16, 12, 1248, 528)]
-TEXTS.append((T, "tape_txt", 40, 46, 1200, 40, 28, AMBER, "left", None))
-knob_row(T, ["loop_len", "loop_start", "loop_speed", "loop_lvl", "od_fb", "tape_mix", "stretch", "stretch_amt"], 236,
-         16, 1264, 120, "dark")
-key_row(T, [("capture", "CAPTURE"), ("l_rec", "REC"), ("l_play", "PLAY"), ("l_stop", "STOP"), ("l_rev", "REVERSE"),
-            ("l_half", "HALF"), ("l_double", "DOUBLE"), ("l_clear", "CLEAR"), ("undo", "UNDO"), ("to_grains", "TO GRAINS"),
-            ("do_stretch", "RENDER")], 448, 16, 1264, "round")
+SECTIONS += [(T, "TAPE  /  LOOPER", 16, 10, 1248, 530)]
+TEXTS.append((T, "tape_txt", 40, 40, 1200, 40, 28, AMBER, "left", None))
+knob_row(T, ["loop_len", "loop_start", "loop_speed", "loop_lvl", "od_fb", "tape_mix", "stretch", "stretch_amt"], 160,
+         16, 1264, 100, "dark")
+key_row(T, [("capture", "CAPTURE"), ("l_rec", "REC"), ("l_play", "PLAY"), ("l_stop", "STOP"), ("undo", "UNDO"),
+            ("l_clear", "CLEAR"), ("send", "SEND"), ("rec_out", "REC OUT")], 352, 16, 1264, "round")
+key_row(T, [("l_rev", "REVERSE"), ("l_half", "HALF"), ("l_double", "DOUBLE"), ("to_grains", "TO GRAINS"),
+            ("do_stretch", "RENDER"), None, ("save", "SAVE"), ("auto_save", "AUTO SAVE")], 452, 16, 1264, "round")
 QLINKS[T] = [["loop_len", "loop_start", "loop_speed", "loop_lvl", "od_fb", "tape_mix", "stretch", "stretch_amt"]]
 
 # ------------------------------------------------------------------------------------------------ MOD (modern)
@@ -150,6 +152,53 @@ knob_row(T, ["sus", "rel"], 432, 784, 1264, 96, "dark")
 QLINKS[T] = [["l1_rate", "l1_depth", "l1_wave", "l1_dest", "l2_rate", "l2_depth", "l2_wave", "l2_dest"],
              ["l3_rate", "l3_depth", "l3_wave", "l3_dest", "fol_amt", "fol_spd", "fol_dest", "-"],
              ["atk", "dec", "sus", "rel", "-", "-", "-", "-"]]
+
+
+QLINK_FILE = os.path.join(ROOT, "qlinks.json")
+PAGE_IDS = ["radio", "pet", "fx", "space", "gate", "tape", "mod"]
+
+
+def load_qlink_file():
+    """qlinks.json ("qlink-map 1": pages -> knobs [{n, key}], n = 1.. in Q-Link order): each tab's Q-Link pages, 8 knobs
+    each; "-" an empty knob. A tab the file doesn't list keeps the defaults."""
+    import json
+    if not os.path.exists(QLINK_FILE):
+        return
+    data = json.load(open(QLINK_FILE))
+    for t, pid in enumerate(PAGE_IDS):
+        page = data.get("pages", {}).get(pid)
+        if not page:
+            continue
+        slots = []
+        for k in sorted(page["knobs"], key=lambda k: k["n"]):
+            while len(slots) < k["n"] - 1:
+                slots.append("-")
+            slots.append(k.get("key") or "-")
+        while slots and slots[-1] == "-":
+            slots.pop()
+        pages = [slots[i:i + 8] for i in range(0, len(slots), 8)]
+        QLINKS[t] = [p for p in pages if any(k != "-" for k in p)]
+
+
+def write_qlink_file():
+    """the current Q-Links as qlinks.json (the defaults, to start the mapping from)"""
+    import json
+    out = {"plugin": "Evil Tuner XXL", "format": "qlink-map 1", "pages": {}}
+    names = {}
+    pj = os.path.join(ROOT, "params.json")
+    if os.path.exists(pj):
+        names = {p["key"]: p["name"] for p in json.load(open(pj))["params"]}
+    for t, pid in enumerate(PAGE_IDS):
+        knobs = []
+        for pi, page in enumerate(QLINKS[t]):
+            for ki, key in enumerate(page):
+                knobs.append({"n": pi * 8 + ki + 1, "qlinkPage": pi + 1, "knob": ki + 1,
+                              "key": None if key == "-" else key, "name": None if key == "-" else names.get(key, key)})
+        out["pages"][pid] = {"name": TABS[t], "knobs": knobs}
+    json.dump(out, open(QLINK_FILE, "w"), indent=1)
+
+
+load_qlink_file()
 
 
 def qlink_names(tab):
@@ -193,6 +242,9 @@ def check():
             for k in p:
                 if k != "-" and k not in keys:
                     raise SystemExit("panel: Q-Link %s is not a parameter" % k)
+                shown = {c[1] for c in KNOBS + KEYS if c[0] == t}
+                if k != "-" and k not in shown:
+                    raise SystemExit("panel: Q-Link %s (%s) has no control on that page" % (k, TABS[t]))
 
 
 if __name__ == "__main__":
@@ -205,6 +257,9 @@ if __name__ == "__main__":
         check()
         if open(os.path.join(ROOT, "layout.conf")).read() != text:
             raise SystemExit("layout.conf is stale: run python3 tools/panel.py --write")
+    elif "--write-qlinks" in sys.argv:
+        write_qlink_file()
+        print("qlinks.json written")
     elif "--qlinks" in sys.argv:
         for t, name in enumerate(TABS):
             for i, p in enumerate(QLINKS[t]):

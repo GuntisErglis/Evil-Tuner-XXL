@@ -10,7 +10,7 @@ mkdir -p build/host/obj build/host/plugin/bin
 SAN="-fsanitize=address,undefined -fno-omit-frame-pointer"
 OBJS=""
 for f in $ENGINE_SRCS; do o=build/host/obj/$(echo $f | tr / _).o; g++ -std=gnu++17 -O1 -g $SAN -DET_TEST $DEFS $INCS -I$W -c $f -o $o; OBJS="$OBJS $o"; done
-for f in $DF_SRCS; do o=build/host/obj/$(echo $f | tr / _).o; [ -f $o ] || g++ -std=gnu++11 -O2 -g -w $DEFS $INCS -c $f -o $o; OBJS="$OBJS $o"; done
+for f in $DF_SRCS $CL_SRCS; do o=build/host/obj/$(echo $f | tr / _).o; [ -f $o ] || g++ -std=gnu++11 -O2 -g -w $DEFS $INCS -c $f -o $o; OBJS="$OBJS $o"; done
 g++ -std=gnu++17 -O1 -g $SAN -I$W test/host_main.cc $OBJS -ldl -lpthread -o build/host/host
 gcc -O2 helpers/et_exec.c -o build/host/plugin/bin/et_exec
 ln -sf "$(command -v ffmpeg)" build/host/plugin/bin/ffmpeg

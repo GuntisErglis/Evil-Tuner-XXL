@@ -24,6 +24,10 @@ static const char *const OPTS_L2_DEST[] = {"OFF", "POSITION", "SIZE", "PITCH", "
 static const char *const OPTS_L3_WAVE[] = {"SINE", "TRI", "SAW UP", "SAW DN", "SQUARE", "S&H", "DRIFT"};
 static const char *const OPTS_L3_DEST[] = {"OFF", "POSITION", "SIZE", "PITCH", "GRAINS", "SPREAD", "CLOUD", "DETUNE", "SHAPE", "CUTOFF", "RESONANCE", "GRAIN MIX", "CHAR INT", "SAT AMOUNT", "DELAY TIME", "DELAY FB", "DELAY WET", "VERB MIX", "GATE DEPTH", "LOOP SPEED", "VOLUME"};
 static const char *const OPTS_FOL_DEST[] = {"OFF", "POSITION", "SIZE", "PITCH", "GRAINS", "SPREAD", "CLOUD", "DETUNE", "SHAPE", "CUTOFF", "RESONANCE", "GRAIN MIX", "CHAR INT", "SAT AMOUNT", "DELAY TIME", "DELAY FB", "DELAY WET", "VERB MIX", "GATE DEPTH", "LOOP SPEED", "VOLUME"};
+static const char *const OPTS_ENGINE[] = {"XXL GRAINS", "CLOUDS"};
+static const char *const OPTS_CL_MODE[] = {"GRANULAR", "STRETCH", "LOOPING DELAY", "SPECTRAL", "OLIVERB", "RESONESTOR"};
+static const char *const OPTS_SCALE[] = {"CHROMATIC", "MAJOR", "MINOR", "DORIAN", "PENTATONIC", "MINOR PENTA", "5THS + OCT", "OCTAVES"};
+static const char *const OPTS_GRAIN_SYNC[] = {"FREE", "1/4", "1/8", "1/16", "1/32", "1/8T", "1/16T"};
 static const char *const OPTS_VIEW[] = {"LIST", "KEYS", "PHONE", "AIRPLAY"};
 static const ParamDef PARAM_DEFS[P_COUNT] = {
     {"in_lvl", "INPUT LEVEL", PK_KNOB, 0, 0.7f, 0},
@@ -224,6 +228,14 @@ static const ParamDef PARAM_DEFS[P_COUNT] = {
     {"row7", "STATION 7", PK_ROW, 0, 0.0f, 0},
     {"row8", "STATION 8", PK_ROW, 0, 0.0f, 0},
     {"view", "VIEW", PK_VIEW, 4, 0.0f, OPTS_VIEW},
+    {"engine", "ENGINE", PK_KNOB, 2, 0.0f, OPTS_ENGINE},
+    {"cl_mode", "CLOUDS MODE", PK_KNOB, 6, 0.0f, OPTS_CL_MODE},
+    {"scale", "SCALE", PK_KNOB, 8, 0.0f, OPTS_SCALE},
+    {"grain_sync", "GRAIN SYNC", PK_KNOB, 7, 0.0f, OPTS_GRAIN_SYNC},
+    {"send", "SEND", PK_KEY, 0, 0.0f, 0},
+    {"rec_out", "REC OUT", PK_KEY, 0, 0.0f, 0},
+    {"save", "SAVE", PK_KEY, 0, 0.0f, 0},
+    {"auto_save", "AUTO SAVE", PK_KEY, 0, 0.0f, 0},
 };
 static const char *const COUNTRY_CODES[] = {"", "GB", "IE", "US", "CA", "PT", "BR", "ES", "FR", "DE", "NL", "BE", "IT", "CH", "AT", "DK", "SE", "NO", "FI", "IS", "PL", "CZ", "SK", "HU", "RO", "BG", "GR", "TR", "RS", "HR", "SI", "UA", "RU", "EE", "LV", "LT", "MX", "AR", "CL", "CO", "PE", "VE", "CU", "JM", "AO", "MZ", "CV", "NG", "GH", "SN", "ZA", "KE", "MA", "EG", "IL", "LB", "SA", "AE", "IN", "PK", "ID", "PH", "TH", "VN", "CN", "TW", "JP", "KR", "AU", "NZ"};
 static const char *const GENRE_TAGS[] = {"all", "pop", "rock", "dance", "electronic", "house", "techno", "trance", "drum and bass", "dubstep", "ambient", "chillout", "lounge", "jazz", "blues", "soul", "funk", "disco", "hip hop", "rnb", "rap", "reggae", "dub", "ska", "latin", "salsa", "bossa nova", "samba", "reggaeton", "afro", "afrobeat", "world", "folk", "country", "classical", "opera", "soundtrack", "experimental", "indie", "alternative", "punk", "metal", "hard rock", "psychedelic", "oldies", "60s", "70s", "80s", "90s", "lo-fi", "downtempo", "trip hop", "industrial", "news", "talk", "comedy", "christian", "gospel", "kpop", "jpop", "anime", "bollywood", "arabic", "turkish", "greek", "celtic", "community", "college", "underground", "easy listening"};

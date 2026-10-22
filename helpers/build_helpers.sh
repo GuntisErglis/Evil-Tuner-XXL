@@ -4,7 +4,7 @@
 #   bin/ffmpeg          decodes the radio stream (LGPL build: mp3 / aac / ogg vorbis+opus / flac only, no network code)
 #   bin/et_roc          the PHONE (Roc) receiver: helpers/et_roc.c on roc-toolkit 0.3.0 (MPL-2.0)
 #   bin/shairport-sync  the AIRPLAY receiver: shairport-sync 4.3.7 (MIT) with mbedTLS, tinysvcmdns, stdout + metadata
-# Needs: python3 -m ziglang (pip install ziglang), git, make, autotools, cmake, scons, ragel, pkg-config, llvm-strip.
+# Needs: python3 -m ziglang (pip install ziglang), git, make, autotools, cmake, scons, ragel, pkg-config, llvm-strip, patch.
 # Sources are cloned from GitHub at fixed tags into build/deps (nothing else is downloaded).
 #   helpers/build_helpers.sh            -> build/helpers/{ffmpeg,et_roc,shairport-sync}
 set -euo pipefail
@@ -80,6 +80,11 @@ clone Mbed-TLS/mbedtls v3.6.4 mbedtls
 clone hyperrealm/libconfig v1.7.3 libconfig
 clone rpm-software-management/popt popt-1.19-release popt
 clone mikebrady/shairport-sync 4.3.7 shairport-sync
+# Evil Tuner XXL's patch (helpers/shairport-sync.patch): the device ID and the mDNS address from the interface that
+# carries the default route, a host name of its own, IPv4 addresses of interfaces that are up only
+if [ ! -f "$D/shairport-sync/.et-patched" ]; then
+  patch -d "$D/shairport-sync" -p1 < helpers/shairport-sync.patch && touch "$D/shairport-sync/.et-patched"
+fi
 if [ ! -x "$OUT/shairport-sync" ]; then
   ( cd "$D/mbedtls" && git submodule update --init --depth 1 framework >/dev/null 2>&1 \
     && make -j$J lib CC=$CC AR=$T-ar CFLAGS=-O2 >/dev/null && cp library/*.a "$S/lib/" && cp -r include/mbedtls include/psa "$S/include/" )

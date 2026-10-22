@@ -39,6 +39,14 @@ def font(px):
     return ImageFont.truetype(LABEL_FONT, px)
 
 
+def title_font(text, w, px, bold=False, min_px=16):
+    """Titillium (MPC's own font, narrow and readable) at px, smaller only to fit w, never under min_px"""
+    f = os.path.join(ART, "fonts", "TitilliumWeb-Bold.ttf" if bold else "TitilliumWeb-SemiBold.ttf")
+    while px > min_px and ImageFont.truetype(f, px).getlength(text) > w:
+        px -= 1
+    return ImageFont.truetype(f, px)
+
+
 def R(v):
     return int(round(v))
 
@@ -260,7 +268,7 @@ def amber_key(w, h, label, lit):
     im.paste(glass, (inner[0], inner[1]), mask)
     d.line([inner[0] + 4 * S, inner[1] + 2 * S, inner[2] - 4 * S, inner[1] + 2 * S],
            fill=(255, 230, 190, 120 if lit else 40), width=S)   # the glass's top highlight
-    f = fit_font(label, (w - 14) * S, int(min(h * 0.32, 15) * S))
+    f = title_font(label, (w - 12) * S, int(min(h * 0.44, 22) * S), bold=True, min_px=15 * S)
     d.text((w * S / 2, h * S / 2 + S), label, font=f, fill=(40, 20, 4, 255) if lit else (196, 128, 52, 255), anchor="mm")
     out = im.resize((w, h), Image.LANCZOS)
     if lit:   # a soft glow around a lit key
@@ -278,8 +286,9 @@ def kbd_key(w, h, label, lit):
     d.rounded_rectangle([0, 0, w * S - 1, h * S - 1], 6 * S, fill=AMBER + (255,) if lit else (34, 32, 30, 255),
                         outline=(10, 10, 10, 255), width=2 * S)
     d.rounded_rectangle([2 * S, 2 * S, w * S - 3 * S, h * S * 0.55], 5 * S, fill=(255, 255, 255, 18))
-    px = 22 if len(label) == 1 else 15
-    d.text((w * S / 2, h * S / 2 + S), label, font=font(px * S), fill=(30, 16, 4, 255) if lit else AMBER + (255,), anchor="mm")
+    px = 28 if len(label) == 1 else 20
+    d.text((w * S / 2, h * S / 2 + S), label, font=title_font(label, (w - 10) * S, px * S, bold=True, min_px=16 * S),
+           fill=(30, 16, 4, 255) if lit else AMBER + (255,), anchor="mm")
     return im.resize((w, h), Image.LANCZOS)
 
 
@@ -360,8 +369,8 @@ def modern_bg(tab):
             continue
         recess(page, (x, y, w, h), (27, 27, 27), 10, 3)
         d = ImageDraw.Draw(page)
-        d.text((x + 18, y + 16), title, font=font(13), fill=(150, 150, 146, 255), anchor="lm")
-        d.line([x + 18 + font(13).getlength(title) + 12, y + 16, x + w - 18, y + 16], fill=(52, 52, 52, 255), width=1)
+        d.text((x + 18, y + 18), title, font=font(16), fill=(170, 170, 166, 255), anchor="lm")
+        d.line([x + 18 + font(16).getlength(title) + 12, y + 18, x + w - 18, y + 18], fill=(56, 56, 56, 255), width=1)
     # the readout strip
     x, y, w, h = P.READOUT
     recess(page, (x, y, w, h), (8, 8, 8), 8, 3)
@@ -387,12 +396,11 @@ def print_labels(page, tab, params):
         if t != tab:
             continue
         knob_ticks(page, cx, cy, s, (210, 210, 205) if classic else (120, 120, 116))
-        gap = min([abs(cx - c2) for t2, k2, c2, y2, *_ in P.KNOBS if t2 == tab and k2 != key and abs(y2 - cy) < 20] + [170])
-        d.text((cx, cy - s * 0.5 - 20 if classic else cy + s * 0.5 + 16), names[key], font=fit_font(names[key], gap - 12, 13 if s > 80 else 11),
-               fill=(222, 214, 200, 255) if classic else (190, 190, 186, 255), anchor="mm")
+        # the knob's name is MPC's own live text (it follows the engine on PET): see build_page
     for t, key, cx, cy, w, h, look, label, views in P.KEYS:
         if t == tab and look == "round":
-            d.text((cx, cy + h / 2 + 14), label, font=font(11), fill=(200, 200, 196, 255), anchor="mm")
+            gap = min([abs(cx - c2) for t2, k2, c2, y2, *_ in P.KEYS if t2 == tab and k2 != key and abs(y2 - cy) < 20] + [200])
+            d.text((cx, cy + h / 2 + 18), label, font=title_font(label, gap - 8, 20), fill=(214, 214, 210, 255), anchor="mm")
 
 
 # ------------------------------------------------------------------------------------------------ TUI.json pieces
@@ -449,6 +457,16 @@ def value_label(x, y, w, h, px, colour, just="horizontallyCentred verticallyCent
                                                             "colour": "ff" + colour, "justification": just,
                                                             "case": "Original"},
                                   "type": "Value", "handleName": "Data"}, bounds_s(x, y, w, h))
+
+
+def name_label(x, y, w, h, px, colour):
+    """MPC's own text: the parameter's name (live: a name the engine changes shows at once)"""
+    return sub("Name", "Label", {"version": 1, "textStyle": {"version": 1, "font": {"version": 1, "name": "Titillium Web",
+                                                                                 "style": "SemiBold", "height": px},
+                                                           "colour": "ff" + colour,
+                                                           "justification": "horizontallyCentred verticallyCentred",
+                                                           "case": "Original"},
+                                 "type": "Name", "handleName": "Data"}, bounds_s(x, y, w, h))
 
 
 def placed(dkey, name, index, rect, focus_on=True, views=None, view_index=None):
@@ -540,23 +558,34 @@ def build_page(sk, tab, preview=None):
         if t != tab:
             continue
         name = knob_strip(sk, look, s)
-        lab_y = s + 4 if classic else s + 28   # modern: the name is printed between the knob and its value
         gap = min([abs(cx - c2) for t2, k2, c2, y2, *_ in P.KNOBS if t2 == tab and k2 != key and abs(y2 - cy) < 20] + [200])
-        tw, th = min(max(s + 40, 140), gap - 4), lab_y + 26
+        tw = min(max(s + 40, 140), gap - 4)
         tw -= tw % 2
-        dkey = "etKnob_%s_%d_%s" % (look, s, "c" if classic else "m")
-        sk.add_def(dkey, KNOB_ACTIONS, [focus(tw, th), filmstrip("Knob", name, KNOB_FRAMES - 1, s, s, (tw - s) // 2, 0),
-                                       value_label(0, lab_y, tw, 26, 20 if s >= 90 else 17, vcol)])
-        if classic:   # names above: the value under the knob is where the tuner prints nothing
-            pass
-        place(dkey, key, (R(cx - tw / 2), R(cy - s / 2), tw, th))
+        NPX, VPX = 20, 22                       # name and value: MPC's Titillium, large
+        if classic:                             # the tuner: the name above the knob, the value under it
+            top = 42
+            knob_y, name_y, val_y = top, 0, top + s + 2
+        else:                                   # the modules: the knob, its name, its value
+            top = 0
+            knob_y, name_y, val_y = 0, s + 4, s + 30
+        th = val_y + 28
+        dkey = "etKnob_%s_%d_%d_%s" % (look, s, tw, "c" if classic else "m")
+        sk.add_def(dkey, KNOB_ACTIONS, [focus(tw, th), filmstrip("Knob", name, KNOB_FRAMES - 1, s, s, (tw - s) // 2, knob_y),
+                                       name_label(0, name_y, tw, 26, NPX, "dcd4c4" if classic else "d2d2ce"),
+                                       value_label(0, val_y, tw, 28, VPX, vcol)])
+        place(dkey, key, (R(cx - tw / 2), R(cy - s / 2 - top), tw, th))
         if shown is not None:
             v, text, _ = preview.get(key, (0.5, "", False))
             ang = -KNOB_SPAN + 2 * KNOB_SPAN * v
             k = knob_frame(look, s, ang)
             shown.alpha_composite(k, (R(cx - s / 2), R(cy - s / 2)))
-            ImageDraw.Draw(shown).text((cx, cy - s / 2 + lab_y + 13), text, font=ImageFont.truetype(TITILLIUM, 20 if s >= 90 else 17),
-                                       fill=tuple(int(vcol[i:i + 2], 16) for i in (0, 2, 4)) + (255,), anchor="mm")
+            dd = ImageDraw.Draw(shown)
+            y0 = cy - s / 2 - top
+            nm = preview.get("__name_" + key, sk.params[sk.index[key]]["name"])
+            dd.text((cx, y0 + name_y + 13), nm, font=title_font(nm, tw - 4, NPX, min_px=14),
+                    fill=(220, 212, 196, 255) if classic else (210, 210, 206, 255), anchor="mm")
+            dd.text((cx, y0 + val_y + 14), text, font=title_font(text, tw - 4, VPX, bold=True, min_px=14),
+                    fill=tuple(int(vcol[i:i + 2], 16) for i in (0, 2, 4)) + (255,), anchor="mm")
 
     # ---- keys
     for t, key, cx, cy, w, h, look, label, views in P.KEYS:
@@ -609,12 +638,12 @@ def build_page(sk, tab, preview=None):
         off_n = sk.save(off, "et_row_off.png")
         dkey = "etRow_%dx%d" % (w, h)
         sk.add_def(dkey, ROW_ACTIONS, [focus(w, h), button(on_n, off_n, w, h),
-                                      value_label(14, 0, w - 44, h, 22, "f29a2e", "left verticallyCentred")])
+                                      value_label(14, 0, w - 44, h, 24, "f29a2e", "left verticallyCentred")])
         place(dkey, key, (x, y, w, h), [0], key == "row1")
         if shown is not None and preview.get("__view", 0) == 0:
             _, text, lit = preview.get(key, (0, "", False))
             shown.alpha_composite(on if lit else off, (x, y))
-            ImageDraw.Draw(shown).text((x + 14, y + h / 2), text, font=ImageFont.truetype(TITILLIUM, 22), fill=AMBER + (255,), anchor="lm")
+            ImageDraw.Draw(shown).text((x + 14, y + h / 2), text, font=ImageFont.truetype(TITILLIUM, 24), fill=AMBER + (255,), anchor="lm")
 
     # ---- live texts
     for t, key, x, y, w, h, px, colour, just, views in P.TEXTS:
@@ -637,7 +666,7 @@ def build_page(sk, tab, preview=None):
     for t, text, cx, cy, px, colour, views in P.STATIC:
         if t != tab:
             continue
-        f = font(px)
+        f = title_font(text, 2000, px)
         tw = int(f.getlength(text)) + 8
         rect = (R(cx - tw / 2), R(cy - px), tw, px * 2)
         im = bg.crop((rect[0], rect[1], rect[0] + rect[2], rect[1] + rect[3]))
