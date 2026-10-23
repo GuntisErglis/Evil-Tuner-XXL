@@ -63,7 +63,7 @@ jobs:
             --version "${{ steps.ver.outputs.version }}" \
             --extra build/helpers:bin \
             --user-data user_data \
-            --about "Evil Tuner XXL by L'Cronx: internet radio, phone (Roc) and AirPlay into an MPC track, through grains, filter, character, saturator, Erica-style delay, reverb, trance gate and a looper" \
+            --about "Evil Tuner XXL by L'Cronx: internet radio, KiwiSDR shortwave, phone (Roc) and AirPlay into an MPC track, through grains, filter, character, saturator, Erica-style delay, reverb, trance gate and a looper" \
             --requires "a network (Wi-Fi or a phone hotspot)" \
             --id evil-tuner-xxl --repo sunskiefer/Evil-Tuner-XXL --license GPL-3.0-or-later \
             -o dist

@@ -32,7 +32,7 @@ INK = (226, 226, 222)
 SS = 3
 KNOB_FRAMES = 128
 KNOB_SPAN = 150
-VIEW_COUNT = 4
+VIEW_COUNT = P.VIEW_COUNT
 
 
 def font(px):
@@ -392,10 +392,13 @@ def print_labels(page, tab, params):
     d = ImageDraw.Draw(page)
     classic = P.STYLE.get(tab) == "classic"
     names = {p["key"]: p["name"] for p in params}
-    for t, key, cx, cy, s, look in P.KNOBS:
+    drawn = set()
+    for t, key, cx, cy, s, look, *views in P.KNOBS:
         if t != tab:
             continue
-        knob_ticks(page, cx, cy, s, (210, 210, 205) if classic else (120, 120, 116))
+        if (cx, cy, s) not in drawn:   # knobs of different views can share a place (and its ticks)
+            knob_ticks(page, cx, cy, s, (210, 210, 205) if classic else (120, 120, 116))
+            drawn.add((cx, cy, s))
         # the knob's name is MPC's own live text (it follows the engine on PET): see build_page
     for t, key, cx, cy, w, h, look, label, views in P.KEYS:
         if t == tab and look == "round":
@@ -477,9 +480,9 @@ def placed(dkey, name, index, rect, focus_on=True, views=None, view_index=None):
          "bounds": {"version": 2, "acceptsHWFocus": "Yes" if focus_on else "No", "showWhenDataModelInvalid": "Hide",
                     "whenVisible": "Always", "boundsType": "Absolute", "bounds": bounds_s(x, y, w, h),
                     "additionalInvalidatingHandles": []}}
-    if views:   # shown only while the view is one of these (MPC's IndexedEnabling)
-        c["bounds"]["additionalInvalidatingHandles"] = ["IndexedEnabling/%d/%d/Parameter %d" % (v, VIEW_COUNT, view_index)
-                                                        for v in views]
+    if views:   # shown only while the view is this one (MPC's IndexedEnabling)
+        assert len(views) == 1, "MPC shows a part only while ALL its IndexedEnabling handles hold: one view per copy"
+        c["bounds"]["additionalInvalidatingHandles"] = ["IndexedEnabling/%d/%d/Parameter %d" % (views[0], VIEW_COUNT, view_index)]
     return c
 
 
@@ -551,14 +554,24 @@ def build_page(sk, tab, preview=None):
     shown = bg.copy() if preview is not None else None
 
     def place(dkey, key, rect, views=None, focus_on=True):
-        kids.append(placed(dkey, key, sk.index[key], rect, focus_on, views, view_i))
+        # a control of several views is one copy per view, each with that view's handle: MPC ANDs a part's handles
+        # (two views on one part would never both hold, and the part would never show; seen on an MPC One, 0.2.0)
+        if views and len(views) > 1:
+            for v in views:
+                kids.append(placed(dkey, key, sk.index[key], rect, focus_on, [v], view_i))
+        else:
+            kids.append(placed(dkey, key, sk.index[key], rect, focus_on, views, view_i))
 
     # ---- knobs: a filmstrip and MPC's value text under it
-    for t, key, cx, cy, s, look in P.KNOBS:
+    names = {p["key"]: p["name"] for p in sk.params}
+    for t, key, cx, cy, s, look, *views in P.KNOBS:
         if t != tab:
             continue
+        views = views[0] if views else None
         name = knob_strip(sk, look, s)
-        gap = min([abs(cx - c2) for t2, k2, c2, y2, *_ in P.KNOBS if t2 == tab and k2 != key and abs(y2 - cy) < 20] + [200])
+        # the nearest neighbour in the row (a knob of another view in the same place is not a neighbour: counting it gave
+        # the knob no width at all)
+        gap = min([abs(cx - c2) for t2, k2, c2, y2, *_ in P.KNOBS if t2 == tab and k2 != key and abs(y2 - cy) < 20 and c2 != cx] + [200])
         tw = min(max(s + 40, 140), gap - 4)
         tw -= tw % 2
         NPX, VPX = 20, 22                       # name and value: MPC's Titillium, large
@@ -573,8 +586,8 @@ def build_page(sk, tab, preview=None):
         sk.add_def(dkey, KNOB_ACTIONS, [focus(tw, th), filmstrip("Knob", name, KNOB_FRAMES - 1, s, s, (tw - s) // 2, knob_y),
                                        name_label(0, name_y, tw, 26, NPX, "dcd4c4" if classic else "d2d2ce"),
                                        value_label(0, val_y, tw, 28, VPX, vcol)])
-        place(dkey, key, (R(cx - tw / 2), R(cy - s / 2 - top), tw, th))
-        if shown is not None:
+        place(dkey, key, (R(cx - tw / 2), R(cy - s / 2 - top), tw, th), views)
+        if shown is not None and (views is None or preview.get("__view", 0) in views):
             v, text, _ = preview.get(key, (0.5, "", False))
             ang = -KNOB_SPAN + 2 * KNOB_SPAN * v
             k = knob_frame(look, s, ang)
@@ -639,8 +652,8 @@ def build_page(sk, tab, preview=None):
         dkey = "etRow_%dx%d" % (w, h)
         sk.add_def(dkey, ROW_ACTIONS, [focus(w, h), button(on_n, off_n, w, h),
                                       value_label(14, 0, w - 44, h, 24, "f29a2e", "left verticallyCentred")])
-        place(dkey, key, (x, y, w, h), [0], key == "row1")
-        if shown is not None and preview.get("__view", 0) == 0:
+        place(dkey, key, (x, y, w, h), [0, 4], key == "row1")
+        if shown is not None and preview.get("__view", 0) in (0, 4):
             _, text, lit = preview.get(key, (0, "", False))
             shown.alpha_composite(on if lit else off, (x, y))
             ImageDraw.Draw(shown).text((x + 14, y + h / 2), text, font=ImageFont.truetype(TITILLIUM, 24), fill=AMBER + (255,), anchor="lm")

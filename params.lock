@@ -204,3 +204,15 @@ send
 rec_out
 save
 auto_save
+kiwi_band
+kiwi_tune
+kiwi_step
+kiwi_bw
+src_kiwi
+km_am
+km_usb
+km_lsb
+km_cw
+km_nfm
+kiwi_enter
+kiwi_txt

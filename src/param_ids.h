@@ -207,6 +207,18 @@ enum {
     P_REC_OUT = 203,
     P_SAVE = 204,
     P_AUTO_SAVE = 205,
-    P_COUNT = 206
+    P_KIWI_BAND = 206,
+    P_KIWI_TUNE = 207,
+    P_KIWI_STEP = 208,
+    P_KIWI_BW = 209,
+    P_SRC_KIWI = 210,
+    P_KM_AM = 211,
+    P_KM_USB = 212,
+    P_KM_LSB = 213,
+    P_KM_CW = 214,
+    P_KM_NFM = 215,
+    P_KIWI_ENTER = 216,
+    P_KIWI_TXT = 217,
+    P_COUNT = 218
 };
 #define NUM_ROWS 8

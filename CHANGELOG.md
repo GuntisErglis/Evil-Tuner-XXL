@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.3 (this fork: upstream 0.2.0 + KIWISDR)
+- Upstream's 0.2.0 (below: CLOUDS, the 3-minute looper, SAVE, the AirPlay fix) with this fork's **KIWISDR** source.
+- **KIWISDR**, a fourth source: live shortwave (10 kHz to 30 MHz) from public KiwiSDR receivers, tuned from the MPC.
+  A list of public receivers (plus your own in `user_data/kiwisdr.txt`) with their listeners, FULL or OFFLINE; **BAND**
+  (a jump to a band's frequency, mode and step: broadcast and ham bands, LF / LW / MW, CB, NDB beacons, time signals,
+  VOLMET, weather fax), **TUNE** (an endless knob over 0 .. 30 MHz, one **STEP** a detent: 10 Hz .. 1 MHz),
+  **FILTER**, the AM / USB / LSB / CW / NFM keys, **ENTER kHz** to type a frequency; the S-meter in the window; Q-Link
+  page RADIO 2. A session the receiver ends is not reopened; a dropped network is retried three times.
+- The KIWISDR parameters come after upstream's: projects saved with upstream 0.1.x / 0.2.0 open with their values. (The
+  KIWISDR parameters moved from this fork's 0.2.0 .. 0.2.2 places; the plugin's own saved state is by name, so a
+  project keeps them, but MPC automation drawn on them would need redrawing.)
+- The RADIO page shows a control of several views once per view (MPC shows a part only while all its view conditions
+  hold); `tools/skin_views_check.py` (run by build.sh) checks it.
+- `build.sh` can build with a GCC cross toolchain instead of Zig (`ARM_GCC=...`).
+
 ## 0.2.0
 
 Tested on an Akai Force (MPC OS 3.9.1).
